@@ -121,11 +121,45 @@ export default function DashboardNavbar({ onSearch, pageTitle = 'Dashboard' }) {
           </AnimatePresence>
         </div>
 
-        {/* Dispatch CTA */}
-        <button className="btn-primary hidden md:flex" id="dispatch-btn">
-          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>add</span>
-          Dispatch
-        </button>
+        {/* Context-Aware Quick Action Button */}
+        {(() => {
+          const path = window.location.pathname;
+          // Determine the best action based on current page + role
+          let action = null;
+
+          if (path === '/fleet') {
+            action = { label: 'Add Vehicle', icon: 'add', to: '/fleet' };
+          } else if (path === '/drivers') {
+            action = { label: 'Add Driver', icon: 'person_add', to: '/drivers' };
+          } else if (path === '/maintenance') {
+            action = { label: 'Schedule Job', icon: 'build_circle', to: '/maintenance' };
+          } else if (path === '/fuel') {
+            action = { label: 'Log Expense', icon: 'receipt_long', to: '/fuel' };
+          } else if (path === '/trips') {
+            action = { label: 'New Trip', icon: 'add_road', to: '/trips' };
+          } else {
+            // Dashboard or other pages — show most relevant action per role
+            const roleDefaults = {
+              dispatcher:        { label: 'New Trip',    icon: 'add_road',     to: '/trips'       },
+              admin:             { label: 'New Trip',    icon: 'add_road',     to: '/trips'       },
+              fleet_manager:     { label: 'Add Vehicle', icon: 'add',          to: '/fleet'       },
+              safety_officer:    { label: 'Add Driver',  icon: 'person_add',   to: '/drivers'     },
+              financial_analyst: { label: 'Log Expense', icon: 'receipt_long', to: '/fuel'        },
+            };
+            action = roleDefaults[user?.role] || { label: 'Dispatch', icon: 'add', to: '/trips' };
+          }
+
+          return (
+            <button
+              className="btn-primary hidden md:flex"
+              id="quick-action-btn"
+              onClick={() => navigate(action.to)}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{action.icon}</span>
+              {action.label}
+            </button>
+          );
+        })()}
 
         {/* Divider */}
         <div className="h-7 w-px bg-outline-variant mx-xs hidden md:block" />

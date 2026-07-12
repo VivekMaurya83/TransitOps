@@ -45,7 +45,8 @@ export default function DashboardSidebar() {
   };
 
   const roleLabel = {
-    admin:             'Fleet Manager',
+    admin:             'Admin',
+    fleet_manager:     'Fleet Manager',
     dispatcher:        'Dispatcher',
     safety_officer:    'Safety Officer',
     financial_analyst: 'Financial Analyst',
@@ -117,6 +118,33 @@ export default function DashboardSidebar() {
             ))}
           </ul>
         </nav>
+
+        {/* Admin-only: User Management link */}
+        {user?.role === 'admin' && (
+          <div className="px-sm pb-xs">
+            <NavLink
+              to="/users"
+              className={({ isActive }) => isActive ? 'nav-item-active' : 'nav-item'}
+            >
+              {({ isActive }) => (
+                <>
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: '20px',
+                      fontVariationSettings: isActive
+                        ? "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24"
+                        : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
+                    }}
+                  >
+                    manage_accounts
+                  </span>
+                  <span className="text-body-sm">User Management</span>
+                </>
+              )}
+            </NavLink>
+          </div>
+        )}
 
         {/* User Profile + Logout */}
         <div className="p-md border-t border-outline-variant">

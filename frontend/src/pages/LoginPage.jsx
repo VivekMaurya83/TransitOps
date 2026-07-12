@@ -8,8 +8,9 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const ROLES = [
+  { value: 'admin',             label: 'Admin' },
+  { value: 'fleet_manager',     label: 'Fleet Manager' },
   { value: 'dispatcher',        label: 'Dispatcher' },
-  { value: 'admin',             label: 'Fleet Manager' },
   { value: 'safety_officer',    label: 'Safety Officer' },
   { value: 'financial_analyst', label: 'Financial Analyst' },
 ];
@@ -38,6 +39,8 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '', role: 'dispatcher', remember: false });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockMinutes, setLockMinutes] = useState(0);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -47,17 +50,24 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLocked(false);
     setLoading(true);
     try {
       const result = await login({ email: form.email, password: form.password, role: form.role });
-      // If backend sets must_change_password, force the user to change their password first
       if (result.mustChangePassword) {
         navigate('/change-password');
       } else {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err?.message || 'Invalid credentials. Please try again.');
+      const msg = err?.message || 'Invalid credentials. Please try again.';
+      // Detect lockout response (HTTP 423)
+      const lockedMatch = msg.match(/(\d+)\s*minute/);
+      if (msg.toLowerCase().includes('locked') && lockedMatch) {
+        setIsLocked(true);
+        setLockMinutes(parseInt(lockedMatch[1], 10));
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -140,15 +150,29 @@ export default function LoginPage() {
             <p className="text-gray-500 mt-2">Enter your credentials to continue</p>
           </div>
 
-          {/* Error Banner */}
+          {/* Error / Lockout Banner */}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-error-container rounded-xl border border-error/30 flex items-start gap-3"
+              className={`mb-6 p-4 rounded-xl border flex items-start gap-3 ${
+                isLocked
+                  ? 'bg-orange-50 border-orange-300'
+                  : 'bg-red-50 border-red-200'
+              }`}
             >
-              <span className="material-symbols-outlined text-error mt-0.5" style={{ fontSize: '18px' }}>error</span>
-              <p className="text-body-sm text-on-error-container">{error}</p>
+              <span
+                className="material-symbols-outlined mt-0.5"
+                style={{ fontSize: '18px', color: isLocked ? '#c2410c' : '#dc2626' }}
+              >
+                {isLocked ? 'lock' : 'error'}
+              </span>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: isLocked ? '#c2410c' : '#dc2626' }}>
+                  {isLocked ? `Account Locked — Try again in ${lockMinutes} min` : 'Login Failed'}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: isLocked ? '#9a3412' : '#991b1b' }}>{error}</p>
+              </div>
             </motion.div>
           )}
 
@@ -231,14 +255,19 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isLocked}
               className="w-full flex justify-center items-center gap-2 py-4 px-4 rounded text-base font-semibold text-white transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-60"
-              style={{ backgroundColor: '#714b67' }}
+              style={{ backgroundColor: isLocked ? '#9ca3af' : '#714b67' }}
             >
               {loading ? (
                 <>
                   <span className="material-symbols-outlined animate-spin" style={{ fontSize: '18px' }}>progress_activity</span>
                   Signing in...
+                </>
+              ) : isLocked ? (
+                <>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock</span>
+                  Account Locked
                 </>
               ) : 'Sign In'}
             </button>

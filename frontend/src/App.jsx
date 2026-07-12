@@ -19,6 +19,7 @@ import DriversPage         from './pages/DriversPage';
 import MaintenancePage     from './pages/MaintenancePage';
 import AnalyticsPage       from './pages/AnalyticsPage';
 import SettingsPage        from './pages/SettingsPage';
+import UserManagementPage  from './pages/UserManagementPage';
 
 // ─── Page Transition Wrapper ─────────────────────────────────────────────────
 const PageWrapper = ({ children }) => (
@@ -101,6 +102,10 @@ export default function App() {
 
         <Route path="/settings" element={
           <ProtectedRoute><PageWrapper><SettingsPage /></PageWrapper></ProtectedRoute>
+        } />
+
+        <Route path="/users" element={
+          <ProtectedRoute><PageWrapper><UserManagementPage /></PageWrapper></ProtectedRoute>
         } />
 
         {/* ── Default Redirects ────────────────────────────────── */}

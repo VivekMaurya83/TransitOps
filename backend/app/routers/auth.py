@@ -51,22 +51,103 @@ def register_admin(payload: schemas.AdminRegisterRequest, db: Session = Depends(
         access_token=token, user=schemas.UserOut.model_validate(user), must_change_password=False,
     )
 
+
 # ─── POST /api/auth/login ───────────────────────────────────────────────────
+
+MAX_FAILED   = 5
+LOCKOUT_MINS = 15
 
 @router.post("/login", response_model=schemas.TokenResponse)
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
-    """Unified login for all roles. Returns `must_change_password` for frontend redirect."""
+    """
+    Unified login for all roles.
+    - Enforces account lockout after 5 consecutive failed attempts (15-min cooldown).
+    - Validates that the selected role matches the user's actual role in the database.
+    - Returns `must_change_password` for frontend redirect.
+    """
+    from datetime import datetime, timezone, timedelta
+
     user = db.query(models.User).filter(models.User.email == payload.email).first()
-    if not user or not verify_password(payload.password, user.hashed_password):
+
+    # ── 1. Lockout Check (before password test to prevent timing attacks) ──────
+    if user and user.locked_until:
+        now = datetime.now(timezone.utc)
+        lock_dt = user.locked_until
+        if lock_dt.tzinfo is None:
+            lock_dt = lock_dt.replace(tzinfo=timezone.utc)
+        if now < lock_dt:
+            remaining = int((lock_dt - now).total_seconds() // 60) + 1
+            raise HTTPException(
+                status.HTTP_423_LOCKED,
+                f"Account locked due to too many failed attempts. Try again in {remaining} minute(s).",
+            )
+        else:
+            # Lockout has expired — clear it
+            user.locked_until = None
+            user.failed_login_attempts = 0
+            user.account_status = models.AccountStatus.active
+            db.commit()
+
+    # ── 2. Password Verification ───────────────────────────────────────────────
+    password_ok = user is not None and verify_password(payload.password, user.hashed_password)
+
+    if not password_ok:
+        if user:
+            user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+            if user.failed_login_attempts >= MAX_FAILED:
+                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINS)
+                user.account_status = models.AccountStatus.locked
+                db.commit()
+                raise HTTPException(
+                    status.HTTP_423_LOCKED,
+                    f"Account locked after {MAX_FAILED} failed attempts. Try again in {LOCKOUT_MINS} minutes.",
+                )
+            db.commit()
+            remaining_attempts = MAX_FAILED - user.failed_login_attempts
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                f"Invalid email or password. {remaining_attempts} attempt(s) remaining before lockout.",
+            )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password.")
+
+    # ── 3. Account Active Check ────────────────────────────────────────────────
     if not user.is_active:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Your account has been deactivated. Contact your administrator.")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Your account has been deactivated. Contact your administrator.",
+        )
+
+    # ── 4. Role Mismatch Check ─────────────────────────────────────────────────
+    if payload.role:
+        ROLE_ALIAS = {
+            "fleet_manager":     "fleet_manager",
+            "admin":             "admin",
+            "dispatcher":        "dispatcher",
+            "safety_officer":    "safety_officer",
+            "financial_analyst": "financial_analyst",
+        }
+        requested_role = ROLE_ALIAS.get(payload.role, payload.role)
+        # Every user must select their exact role — no bypass for any role
+        if user.role.value != requested_role:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                f"Access denied. Your account does not have the '{payload.role.replace('_', ' ').title()}' role.",
+            )
+
+    # ── 5. Successful Login — reset counters ───────────────────────────────────
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    user.account_status = models.AccountStatus.active
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
 
     token = create_access_token({"sub": str(user.id), "role": user.role.value})
     return schemas.TokenResponse(
-        access_token=token, user=schemas.UserOut.model_validate(user),
+        access_token=token,
+        user=schemas.UserOut.model_validate(user),
         must_change_password=user.must_change_password,
     )
+
 
 # ─── POST /api/auth/forgot-password ────────────────────────────────────────
 
