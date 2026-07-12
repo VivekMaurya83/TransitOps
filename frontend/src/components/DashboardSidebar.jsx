@@ -8,21 +8,21 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/dashboard',   icon: 'dashboard',              label: 'Dashboard' },
-  { to: '/fleet',       icon: 'local_shipping',         label: 'Fleet' },
-  { to: '/drivers',     icon: 'person_pin',             label: 'Drivers' },
-  { to: '/trips',       icon: 'route',                  label: 'Trips' },
-  { to: '/maintenance', icon: 'build',                  label: 'Maintenance' },
-  { to: '/fuel',        icon: 'local_gas_station',      label: 'Fuel & Expenses' },
-  { to: '/analytics',   icon: 'bar_chart',              label: 'Analytics' },
-  { to: '/settings',    icon: 'admin_panel_settings',   label: 'Settings' },
+  { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { to: '/fleet', icon: 'local_shipping', label: 'Fleet' },
+  { to: '/drivers', icon: 'person_pin', label: 'Drivers' },
+  { to: '/trips', icon: 'route', label: 'Trips' },
+  { to: '/maintenance', icon: 'build', label: 'Maintenance' },
+  { to: '/fuel', icon: 'local_gas_station', label: 'Fuel & Expenses' },
+  { to: '/analytics', icon: 'bar_chart', label: 'Analytics' },
+  { to: '/settings', icon: 'admin_panel_settings', label: 'Settings' },
 ];
 
 const BOTTOM_NAV = [
-  { to: '/dashboard',   icon: 'dashboard',      label: 'Dash'    },
-  { to: '/fleet',       icon: 'local_shipping', label: 'Fleet'   },
-  { to: '/trips',       icon: 'route',          label: 'Trips'   },
-  { to: '/analytics',   icon: 'notifications',  label: 'Alerts'  },
+  { to: '/dashboard', icon: 'dashboard', label: 'Dash' },
+  { to: '/fleet', icon: 'local_shipping', label: 'Fleet' },
+  { to: '/trips', icon: 'route', label: 'Trips' },
+  { to: '/analytics', icon: 'notifications', label: 'Alerts' },
 ];
 
 const sidebarVariants = {
@@ -31,7 +31,7 @@ const sidebarVariants = {
 };
 
 const navItemVariants = {
-  hidden:  { opacity: 0, x: -16 },
+  hidden: { opacity: 0, x: -16 },
   visible: (i) => ({ opacity: 1, x: 0, transition: { delay: i * 0.04, duration: 0.25 } }),
 };
 
@@ -45,10 +45,10 @@ export default function DashboardSidebar() {
   };
 
   const roleLabel = {
-    admin:             'Admin',
-    fleet_manager:     'Fleet Manager',
-    dispatcher:        'Dispatcher',
-    safety_officer:    'Safety Officer',
+    admin: 'Admin',
+    fleet_manager: 'Fleet Manager',
+    dispatcher: 'Dispatcher',
+    safety_officer: 'Safety Officer',
     financial_analyst: 'Financial Analyst',
   }[user?.role] || user?.role || 'User';
 
@@ -178,8 +178,7 @@ export default function DashboardSidebar() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 transition-colors ${
-                isActive ? 'text-primary' : 'text-secondary'
+              `flex flex-col items-center gap-0.5 transition-colors ${isActive ? 'text-primary' : 'text-secondary'
               }`
             }
           >
