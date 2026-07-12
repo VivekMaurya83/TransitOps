@@ -66,7 +66,7 @@ def close_maintenance_log(
 
 @router.get("/", response_model=List[schemas.MaintenanceOut])
 def list_maintenance_logs(
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(require_roles(models.UserRole.fleet_manager, models.UserRole.dispatcher, models.UserRole.financial_analyst)),
     db: Session = Depends(get_db),
 ):
     return (

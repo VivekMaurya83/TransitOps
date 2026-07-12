@@ -48,6 +48,15 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function RoleProtectedRoute({ children, allowedRoles }) {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user?.role) && user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
+
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const location = useLocation();
@@ -84,27 +93,39 @@ export default function App() {
         } />
 
         <Route path="/trips" element={
-          <ProtectedRoute><PageWrapper><TripDispatcherPage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['dispatcher', 'safety_officer']}>
+            <PageWrapper><TripDispatcherPage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         <Route path="/fleet" element={
-          <ProtectedRoute><PageWrapper><VehicleRegistryPage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['fleet_manager', 'dispatcher', 'financial_analyst']}>
+            <PageWrapper><VehicleRegistryPage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         <Route path="/fuel" element={
-          <ProtectedRoute><PageWrapper><FuelExpensesPage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['financial_analyst']}>
+            <PageWrapper><FuelExpensesPage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         <Route path="/drivers" element={
-          <ProtectedRoute><PageWrapper><DriversPage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['fleet_manager', 'safety_officer']}>
+            <PageWrapper><DriversPage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         <Route path="/maintenance" element={
-          <ProtectedRoute><PageWrapper><MaintenancePage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['fleet_manager', 'dispatcher', 'financial_analyst']}>
+            <PageWrapper><MaintenancePage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         <Route path="/analytics" element={
-          <ProtectedRoute><PageWrapper><AnalyticsPage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['fleet_manager', 'financial_analyst']}>
+            <PageWrapper><AnalyticsPage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         <Route path="/settings" element={
@@ -112,7 +133,9 @@ export default function App() {
         } />
 
         <Route path="/users" element={
-          <ProtectedRoute><PageWrapper><UserManagementPage /></PageWrapper></ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['admin']}>
+            <PageWrapper><UserManagementPage /></PageWrapper>
+          </RoleProtectedRoute>
         } />
 
         {/* ── Default Redirects ────────────────────────────────── */}

@@ -8,21 +8,21 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/dashboard',   icon: 'dashboard',              label: 'Dashboard' },
-  { to: '/fleet',       icon: 'local_shipping',         label: 'Fleet' },
-  { to: '/drivers',     icon: 'person_pin',             label: 'Drivers' },
-  { to: '/trips',       icon: 'route',                  label: 'Trips' },
-  { to: '/maintenance', icon: 'build',                  label: 'Maintenance' },
-  { to: '/fuel',        icon: 'local_gas_station',      label: 'Fuel & Expenses' },
-  { to: '/analytics',   icon: 'bar_chart',              label: 'Analytics' },
-  { to: '/settings',    icon: 'admin_panel_settings',   label: 'Settings' },
+  { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { to: '/fleet', icon: 'local_shipping', label: 'Fleet' },
+  { to: '/drivers', icon: 'person_pin', label: 'Drivers' },
+  { to: '/trips', icon: 'route', label: 'Trips' },
+  { to: '/maintenance', icon: 'build', label: 'Maintenance' },
+  { to: '/fuel', icon: 'local_gas_station', label: 'Fuel & Expenses' },
+  { to: '/analytics', icon: 'bar_chart', label: 'Analytics' },
+  { to: '/settings', icon: 'admin_panel_settings', label: 'Settings' },
 ];
 
 const BOTTOM_NAV = [
-  { to: '/dashboard',   icon: 'dashboard',      label: 'Dash'    },
-  { to: '/fleet',       icon: 'local_shipping', label: 'Fleet'   },
-  { to: '/trips',       icon: 'route',          label: 'Trips'   },
-  { to: '/analytics',   icon: 'notifications',  label: 'Alerts'  },
+  { to: '/dashboard', icon: 'dashboard', label: 'Dash' },
+  { to: '/fleet', icon: 'local_shipping', label: 'Fleet' },
+  { to: '/trips', icon: 'route', label: 'Trips' },
+  { to: '/analytics', icon: 'notifications', label: 'Alerts' },
 ];
 
 const sidebarVariants = {
@@ -31,7 +31,7 @@ const sidebarVariants = {
 };
 
 const navItemVariants = {
-  hidden:  { opacity: 0, x: -16 },
+  hidden: { opacity: 0, x: -16 },
   visible: (i) => ({ opacity: 1, x: 0, transition: { delay: i * 0.04, duration: 0.25 } }),
 };
 
@@ -45,10 +45,10 @@ export default function DashboardSidebar() {
   };
 
   const roleLabel = {
-    admin:             'Admin',
-    fleet_manager:     'Fleet Manager',
-    dispatcher:        'Dispatcher',
-    safety_officer:    'Safety Officer',
+    admin: 'Admin',
+    fleet_manager: 'Fleet Manager',
+    dispatcher: 'Dispatcher',
+    safety_officer: 'Safety Officer',
     financial_analyst: 'Financial Analyst',
   }[user?.role] || user?.role || 'User';
 
@@ -58,6 +58,30 @@ export default function DashboardSidebar() {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const isAllowed = (path) => {
+    if (user?.role === 'admin') return true;
+    switch (path) {
+      case '/dashboard':
+      case '/settings':
+        return true;
+      case '/fleet':
+      case '/maintenance':
+        return ['fleet_manager', 'dispatcher', 'financial_analyst'].includes(user?.role);
+      case '/drivers':
+        return ['fleet_manager', 'safety_officer'].includes(user?.role);
+      case '/trips':
+        return ['dispatcher', 'safety_officer'].includes(user?.role);
+      case '/fuel':
+        return ['financial_analyst'].includes(user?.role);
+      case '/analytics':
+        return ['fleet_manager', 'financial_analyst'].includes(user?.role);
+      default:
+        return false;
+    }
+  };
+
+  const allowedNavItems = NAV_ITEMS.filter(item => isAllowed(item.to));
 
   return (
     <>
@@ -89,7 +113,7 @@ export default function DashboardSidebar() {
         {/* Nav Items */}
         <nav className="flex-1 mt-xs overflow-y-auto custom-scrollbar">
           <ul className="space-y-0.5">
-            {NAV_ITEMS.map((item, i) => (
+            {allowedNavItems.map((item, i) => (
               <motion.li key={item.to} custom={i} variants={navItemVariants} initial="hidden" animate="visible">
                 <NavLink
                   to={item.to}
@@ -173,13 +197,12 @@ export default function DashboardSidebar() {
 
       {/* ── Mobile Bottom Navigation ─────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-around z-50">
-        {BOTTOM_NAV.map((item) => (
+        {BOTTOM_NAV.filter(item => isAllowed(item.to)).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 transition-colors ${
-                isActive ? 'text-primary' : 'text-secondary'
+              `flex flex-col items-center gap-0.5 transition-colors ${isActive ? 'text-primary' : 'text-secondary'
               }`
             }
           >
