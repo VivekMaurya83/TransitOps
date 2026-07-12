@@ -11,6 +11,7 @@ class MaintenanceCreate(BaseModel):
     maintenance_type: str
     description: Optional[str] = None
     cost: Decimal = Decimal("0")
+    scheduled_date: Optional[date] = None
 
 class MaintenanceOut(BaseModel):
     id: UUID

@@ -33,6 +33,7 @@ def open_maintenance_log(
         maintenance_type=payload.maintenance_type,
         description=payload.description,
         estimated_cost=payload.cost,
+        scheduled_date=payload.scheduled_date,
         created_by=current_user.id,
         status=models.MaintenanceStatus.active,
         start_date=datetime.now(timezone.utc).date(),
