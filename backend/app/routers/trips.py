@@ -10,6 +10,7 @@ from ..db.database import get_db
 from .. import models, schemas
 from ..core.rbac import require_roles
 from ..services import trip_rules
+from ..utils.generators import generate_trip_number
 
 router = APIRouter(prefix="/api/trips", tags=["trips"])
 dispatcher_role = require_roles(models.UserRole.dispatcher, models.UserRole.fleet_manager)
@@ -40,6 +41,7 @@ def create_trip(
     trip = models.Trip(
         company_id=current_user.company_id,
         created_by=current_user.id,
+        trip_number=generate_trip_number(db),
         status=models.TripStatus.draft,
         **payload.model_dump(),
     )

@@ -33,5 +33,5 @@ class TripOut(BaseModel):
     completed_at: Optional[datetime] = None
     cancelled_at: Optional[datetime] = None
     created_at: datetime
-
+    trip_number: str
     model_config = {"from_attributes": True}

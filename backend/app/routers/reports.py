@@ -33,7 +33,7 @@ def get_summary(
     total_fuel_cost = db.query(func.coalesce(func.sum(models.FuelLog.cost), 0)).filter(
         models.FuelLog.company_id == company_id
     ).scalar()
-    total_maintenance_cost = db.query(func.coalesce(func.sum(models.MaintenanceLog.cost), 0)).filter(
+    total_maintenance_cost = db.query(func.coalesce(func.sum(models.MaintenanceLog.actual_cost), 0)).filter(
         models.MaintenanceLog.company_id == company_id
     ).scalar()
     total_distance = db.query(func.coalesce(func.sum(models.Trip.actual_distance), 0)).filter(
@@ -67,7 +67,11 @@ def export_vehicles_csv(
     writer = csv.writer(buffer)
     writer.writerow(["Registration Number", "Name", "Type", "Status", "Odometer", "Acquisition Cost"])
     for v in vehicles:
-        writer.writerow([v.registration_number, v.name, v.type.value, v.status.value, v.odometer, v.acquisition_cost])
+        writer.writerow([
+            v.registration_number, v.name,
+            v.vehicle_type.name if v.vehicle_type else "",
+            v.status.value, v.odometer, v.acquisition_cost,
+        ])
     buffer.seek(0)
     return StreamingResponse(
         buffer, media_type="text/csv",
