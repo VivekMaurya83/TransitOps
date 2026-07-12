@@ -5,10 +5,11 @@ Mounts all routers, sets up CORS, and creates DB tables on startup.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .db.database import engine, Base
+from .db.database import engine, Base, apply_extra_sql
 from .routers import (
     auth, admin, dashboard, settings,
     vehicles, drivers, trips, maintenance, fuel_expenses, reports,
+    regions, vehicle_types, documents,
 )
 
 app = FastAPI(
@@ -23,17 +24,14 @@ app = FastAPI(
 def create_tables():
     try:
         Base.metadata.create_all(bind=engine)
-        print("[OK] Database tables verified/created successfully.")
+        apply_extra_sql()
+        print("[OK] Database tables + partial indexes verified/created successfully.")
     except Exception as e:
         print(f"[WARN] Could not connect to database: {e}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,13 +39,16 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
-app.include_router(dashboard.router)
 app.include_router(settings.router)
+app.include_router(dashboard.router)
+app.include_router(regions.router)
+app.include_router(vehicle_types.router)
 app.include_router(vehicles.router)
 app.include_router(drivers.router)
 app.include_router(trips.router)
 app.include_router(maintenance.router)
 app.include_router(fuel_expenses.router)
+app.include_router(documents.router)
 app.include_router(reports.router)
 
 @app.get("/", tags=["health"])
