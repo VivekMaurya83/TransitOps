@@ -271,6 +271,16 @@ export default function LoginPage() {
                 </>
               ) : 'Sign In'}
             </button>
+            <div className="text-center pt-2 text-sm text-gray-500">
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/signup')}
+                className="font-medium text-blue-500 hover:text-blue-600 hover:underline"
+              >
+                Sign up
+              </button>
+            </div>
           </form>
 
           {/* Access Scope legend */}

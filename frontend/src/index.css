@@ -70,10 +70,10 @@
     @apply status-chip bg-primary/10 text-primary;
   }
   .status-completed {
-    @apply status-chip bg-odoo-teal/10 text-odoo-teal;
+    @apply status-chip bg-secondary/10 text-secondary;
   }
   .status-dispatched {
-    @apply status-chip bg-secondary-container/30 text-odoo-teal;
+    @apply status-chip bg-secondary-container/30 text-secondary;
   }
   .status-draft {
     @apply status-chip bg-surface-container-highest text-secondary;
@@ -82,7 +82,7 @@
     @apply status-chip bg-error-container text-error;
   }
   .status-available {
-    @apply status-chip bg-odoo-teal/10 text-odoo-teal;
+    @apply status-chip bg-secondary/10 text-secondary;
   }
   .status-maintenance {
     @apply status-chip bg-on-tertiary-container/20 text-tertiary;

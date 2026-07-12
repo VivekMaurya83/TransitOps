@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // force reload 1
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

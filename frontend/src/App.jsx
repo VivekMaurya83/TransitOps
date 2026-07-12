@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 
 // ─── Page Imports ─────────────────────────────────────────────────────────────
+import SignupPage          from './pages/SignupPage';
 import LoginPage           from './pages/LoginPage';
 import ForgotPasswordPage  from './pages/ForgotPasswordPage';
 import ChangePasswordPage  from './pages/ChangePasswordPage';
@@ -56,6 +57,12 @@ export default function App() {
       <Routes location={location} key={location.pathname}>
 
         {/* ── Public ─────────────────────────────────────────── */}
+        <Route path="/signup" element={
+          <PublicRoute>
+            <PageWrapper><SignupPage /></PageWrapper>
+          </PublicRoute>
+        } />
+        
         <Route path="/login" element={
           <PublicRoute>
             <PageWrapper><LoginPage /></PageWrapper>
