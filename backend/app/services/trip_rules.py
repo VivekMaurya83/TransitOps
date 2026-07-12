@@ -29,6 +29,8 @@ def validate_dispatch(vehicle: models.Vehicle, driver: models.Driver, cargo_weig
         )
 
 def dispatch_trip(db: Session, trip: models.Trip, vehicle: models.Vehicle, driver: models.Driver, user_id) -> None:
+    if trip.status != models.TripStatus.draft:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only draft trips can be dispatched.")
     validate_dispatch(vehicle, driver, trip.cargo_weight)
     trip.status = models.TripStatus.dispatched
     trip.dispatched_at = datetime.now(timezone.utc)
@@ -82,5 +84,9 @@ def open_maintenance(db: Session, vehicle: models.Vehicle) -> None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Vehicle already has an active maintenance record.")
 
 def close_maintenance(db: Session, vehicle: models.Vehicle) -> None:
-    if vehicle.status != models.VehicleStatus.retired:
-        vehicle.status = models.VehicleStatus.available
+    if vehicle.status == models.VehicleStatus.retired:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Retired vehicles cannot exit maintenance.")
+    if vehicle.status != models.VehicleStatus.in_shop:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only vehicles currently in maintenance can be closed.")
+    vehicle.status = models.VehicleStatus.available
+    db.commit()
