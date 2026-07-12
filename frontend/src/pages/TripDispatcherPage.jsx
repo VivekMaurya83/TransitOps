@@ -17,6 +17,121 @@ const STATUS_CONFIG = {
   cancelled:   { label: 'Cancelled',  cls: 'status-delayed',    icon: 'cancel'         },
 };
 
+// ── Trip Lifecycle Stepper ─────────────────────────────────────────
+const LIFECYCLE_STEPS = [
+  { key: 'draft',      label: 'Draft',      icon: 'edit_note'      },
+  { key: 'dispatched', label: 'Dispatched', icon: 'directions_car' },
+  { key: 'completed',  label: 'Completed',  icon: 'check_circle'   },
+];
+
+const STEP_COLORS = {
+  done:      { dot: '#15803d', line: '#15803d', text: '#15803d', bg: '#dcfce7' },
+  active:    { dot: '#714b67', line: '#d1c3ca', text: '#714b67', bg: '#ffd7f1' },
+  cancelled: { dot: '#b91c1c', line: '#fee2e2', text: '#b91c1c', bg: '#fee2e2' },
+  pending:   { dot: '#d1c3ca', line: '#d1c3ca', text: '#80747a', bg: '#f1f5f9' },
+};
+
+function TripLifecycle({ trip }) {
+  if (!trip) {
+    return (
+      <div className="flex items-center gap-2 px-md py-sm bg-surface-container-low rounded-xl border border-outline-variant/50">
+        <span className="material-symbols-outlined text-outline" style={{ fontSize: '16px' }}>route</span>
+        <span className="text-[12px] font-bold text-secondary uppercase tracking-widest">Trip Lifecycle</span>
+        <span className="text-[12px] text-outline ml-2">← Select a trip row to track its progress</span>
+      </div>
+    );
+  }
+
+  const isCancelled = trip.status === 'cancelled';
+  const stepIndex = isCancelled ? 1
+    : LIFECYCLE_STEPS.findIndex(s => s.key === trip.status);
+
+  return (
+    <motion.div
+      layout
+      className="flex items-center gap-0 px-md py-md bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden"
+    >
+      <span className="text-[11px] font-black uppercase tracking-widest text-secondary mr-lg whitespace-nowrap">
+        TRIP LIFECYCLE
+      </span>
+
+      {LIFECYCLE_STEPS.map((step, i) => {
+        const isDone   = !isCancelled && i < stepIndex;
+        const isActive = !isCancelled && i === stepIndex;
+        const isCancelledStep = isCancelled && i === 1; // mark dispatched node as cancelled
+        const isAfterCancel = isCancelled && i > 0;
+
+        const colors = isCancelledStep ? STEP_COLORS.cancelled
+          : isDone ? STEP_COLORS.done
+          : isActive ? STEP_COLORS.active
+          : STEP_COLORS.pending;
+
+        const lineColor = (isDone && !isCancelledStep) ? STEP_COLORS.done.line : STEP_COLORS.pending.line;
+
+        return (
+          <React.Fragment key={step.key}>
+            {/* Connector line */}
+            {i > 0 && (
+              <motion.div
+                className="h-0.5 flex-1"
+                style={{ background: lineColor, minWidth: '32px' }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.4, delay: i * 0.12 }}
+              />
+            )}
+
+            {/* Step node */}
+            <motion.div
+              className="flex flex-col items-center gap-1 flex-shrink-0"
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.35, delay: i * 0.1, type: 'spring', stiffness: 260, damping: 20 }}
+            >
+              {/* Circle */}
+              <motion.div
+                className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm border-2"
+                style={{
+                  backgroundColor: colors.bg,
+                  borderColor: colors.dot,
+                }}
+                animate={isActive ? { scale: [1, 1.12, 1] } : {}}
+                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: '18px',
+                    color: colors.dot,
+                    fontVariationSettings: (isDone || isActive) ? "'FILL' 1" : "'FILL' 0",
+                  }}
+                >
+                  {isCancelledStep ? 'cancel' : step.icon}
+                </span>
+              </motion.div>
+
+              {/* Label */}
+              <span
+                className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap"
+                style={{ color: colors.text }}
+              >
+                {isCancelledStep ? 'Cancelled' : step.label}
+              </span>
+            </motion.div>
+          </React.Fragment>
+        );
+      })}
+
+      {/* Trip number badge */}
+      {trip.trip_number && (
+        <span className="ml-lg text-[11px] font-black text-secondary uppercase tracking-wider whitespace-nowrap bg-surface-container px-sm py-0.5 rounded-full">
+          {trip.trip_number}
+        </span>
+      )}
+    </motion.div>
+  );
+}
+
 const COLUMNS = ['draft', 'dispatched', 'on_trip', 'completed'];
 
 function Toast({ toast }) {
@@ -101,9 +216,10 @@ export default function TripDispatcherPage() {
   const [search, setSearch]         = useState('');
   const [view, setView]             = useState('list');
   const [showModal, setShowModal]   = useState(false);
-  const [showComplete, setShowComplete] = useState(null);  // trip id to complete
+  const [showComplete, setShowComplete] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]           = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState(null);  // for lifecycle stepper
 
   const [form, setForm] = useState({
     source: '', destination: '', vehicle_id: '', driver_id: '',
@@ -231,8 +347,14 @@ export default function TripDispatcherPage() {
         {/* Search */}
         <div className="relative max-w-sm">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style={{ fontSize: '16px' }}>search</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search trip or route..." className="search-input pl-9" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search trip or route..." className="search-input pl-9 w-full" />
         </div>
+
+        {/* Trip Lifecycle Stepper — full width, above table */}
+        <AnimatePresence mode="wait">
+          <TripLifecycle key={selectedTrip?.id || 'none'} trip={selectedTrip} />
+        </AnimatePresence>
+
 
         {loading ? (
           <div className="flex justify-center items-center h-40">
@@ -288,8 +410,20 @@ export default function TripDispatcherPage() {
                         const sc = STATUS_CONFIG[trip.status] || { label: trip.status, cls: 'status-draft' };
                         const vehicle = vehicles.find(v => v.id === trip.vehicle_id);
                         const driver = drivers.find(d => d.id === trip.driver_id);
+                        const isSelected = selectedTrip?.id === trip.id;
                         return (
-                          <motion.tr key={trip.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }} className="table-row">
+                          <motion.tr
+                            key={trip.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.04 }}
+                            onClick={() => setSelectedTrip(isSelected ? null : trip)}
+                            className={`table-row cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-primary/5 border-l-2 border-primary'
+                                : 'hover:bg-surface-container-low'
+                            }`}
+                          >
                             <td className="table-cell"><span className="data-mono text-[12px] text-primary">{trip.id.slice(0, 8).toUpperCase()}</span></td>
                             <td className="table-cell text-body-sm">
                               <span className="text-on-surface">{trip.source}</span>
