@@ -4,13 +4,13 @@
 
 ### Smart Transport Operations Platform
 
-*Digitize vehicle, driver, dispatch, maintenance, and expense management through an intelligent, centralized platform built for modern logistics operations.*
+*An intelligent fleet management platform that streamlines vehicle, driver, dispatch, maintenance, fuel, and expense operations through automation and real-time analytics.*
 
 <br>
 
 ![Status](https://img.shields.io/badge/Status-Hackathon-orange?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react)
-![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?style=for-the-badge&logo=node.js)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?style=for-the-badge&logo=postgresql)
 
 </div>
@@ -21,45 +21,57 @@
 
 Managing transport operations using spreadsheets and manual records often leads to scheduling conflicts, underutilized vehicles, missed maintenance, expired driver licenses, inaccurate expense tracking, and poor operational visibility.
 
-**TransitOps** is a modern fleet management platform that digitizes the complete transport lifecycle—from vehicle registration and driver management to trip dispatch, maintenance scheduling, fuel tracking, operational analytics, and business reporting. By automating workflows and enforcing business rules, TransitOps helps organizations operate more efficiently while reducing manual errors.
+**TransitOps** is a centralized transport operations platform that digitizes the complete fleet lifecycle—from vehicle registration and driver management to trip dispatch, maintenance scheduling, fuel monitoring, expense tracking, and operational reporting.
+
+Designed with automation at its core, the platform enforces business rules in real time, eliminates manual errors, and provides organizations with complete visibility into their transport operations through an intuitive dashboard and actionable analytics.
 
 ---
 
 # ✨ Features
 
 ### 🔐 Secure Authentication
-Role-based authentication ensures every user has access only to the features and data relevant to their responsibilities.
+
+Provides secure login with Role-Based Access Control (RBAC), ensuring users can only access modules and actions permitted for their responsibilities.
 
 ### 🚚 Fleet Management
-Maintain a centralized registry of vehicles with real-time status tracking, load capacity, mileage, lifecycle information, and operational availability.
+
+Maintain a centralized registry of all vehicles with complete lifecycle tracking, including registration details, vehicle type, load capacity, mileage, acquisition information, and current operational status.
 
 ### 👨‍✈️ Driver Management
-Manage driver profiles, monitor license validity, safety scores, availability, and ensure only eligible drivers can be assigned to trips.
+
+Manage driver profiles, license validity, safety scores, availability, suspension status, and ensure only eligible drivers are assigned to operational trips.
 
 ### 📦 Smart Trip Management
-Create, dispatch, monitor, and complete trips while automatically validating vehicle availability, driver eligibility, and cargo capacity.
+
+Create, dispatch, monitor, complete, and cancel trips while automatically validating vehicle availability, driver eligibility, and cargo capacity before dispatch.
 
 ### 🔧 Maintenance Management
-Track vehicle servicing and maintenance history with automatic status updates that prevent unavailable vehicles from being assigned to new trips.
+
+Track scheduled and emergency maintenance records with automatic synchronization of vehicle status, preventing vehicles under maintenance from being assigned to active trips.
 
 ### ⛽ Fuel & Expense Tracking
-Record fuel usage, maintenance expenses, tolls, and other operational costs while generating accurate cost insights for every vehicle.
+
+Record fuel consumption, maintenance expenses, toll charges, and additional operational costs while automatically calculating total expenses for every vehicle.
 
 ### 📊 Analytics Dashboard
-Visualize fleet performance through interactive dashboards featuring utilization metrics, fuel efficiency, operational costs, trip statistics, and business KPIs.
 
-### ⚙️ Automated Business Rules
-Every operation is validated automatically to prevent scheduling conflicts, double bookings, expired licenses, overloaded vehicles, and invalid dispatches.
+Gain real-time insights through interactive dashboards displaying fleet utilization, active trips, driver availability, operational costs, fuel efficiency, and overall fleet performance.
+
+### ⚙️ Intelligent Business Rule Engine
+
+TransitOps automatically validates every operational activity by preventing double bookings, overloaded vehicles, expired licenses, unavailable drivers, and invalid dispatch operations.
 
 ---
 
 # 🌍 Project Scope
 
-TransitOps is designed as a complete transport operations platform capable of managing the daily workflow of logistics companies, fleet operators, warehouses, and enterprise transportation departments.
+TransitOps is designed to modernize transport operations for logistics companies, fleet operators, warehouses, courier services, manufacturing industries, and enterprise transportation departments.
 
-The platform centralizes vehicle management, driver administration, dispatch operations, maintenance scheduling, expense monitoring, and performance analytics into a single system. By replacing fragmented spreadsheets and manual processes, TransitOps improves operational visibility, ensures compliance with business rules, and streamlines decision-making across the organization.
+The platform centralizes every operational workflow into a single intelligent system, enabling organizations to manage vehicles, drivers, trips, maintenance, expenses, and analytics from one unified interface.
 
-Its modular architecture allows the platform to scale from small transport businesses to enterprise logistics organizations.
+By replacing fragmented spreadsheets and manual processes with automation and rule-driven workflows, TransitOps improves operational efficiency, increases fleet utilization, reduces human errors, and provides decision-makers with real-time visibility into transport performance.
+
+Its modular architecture allows the platform to scale seamlessly from small businesses managing a handful of vehicles to enterprise logistics organizations operating large transportation networks.
 
 ---
 
@@ -72,30 +84,34 @@ Its modular architecture allows the platform to scale from small transport busin
 - Recharts
 
 ### Backend
-- Node.js
-- Express.js
+- FastAPI
+- Python
+- RESTful APIs
 
 ### Database
 - PostgreSQL
 - Prisma ORM
 
 ### Authentication
-- JWT
-- bcrypt
+- JWT Authentication
+- bcrypt Password Hashing
 
 ---
 
 # 📸 Screenshots
 
-> Screenshots will be added after implementation.
+Project screenshots will be added after implementation.
 
 <!--
 ![Dashboard](assets/dashboard.png)
-![Vehicles](assets/vehicles.png)
-![Trips](assets/trips.png)
+
+![Fleet Management](assets/fleet.png)
+
+![Trip Management](assets/trips.png)
+
+![Analytics](assets/analytics.png)
 -->
 
 ---
 
 <div align="center">
-
