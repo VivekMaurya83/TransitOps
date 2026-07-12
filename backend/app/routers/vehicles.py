@@ -12,6 +12,7 @@ from ..core.rbac import require_roles
 
 router = APIRouter(prefix="/api/vehicles", tags=["vehicles"])
 manager_only = require_roles(models.UserRole.fleet_manager)
+vehicle_viewers = require_roles(models.UserRole.fleet_manager, models.UserRole.dispatcher, models.UserRole.financial_analyst)
 
 @router.post("/", response_model=schemas.VehicleOut, status_code=status.HTTP_201_CREATED)
 def create_vehicle(
@@ -52,7 +53,7 @@ def list_vehicles(
     status_filter: Optional[models.VehicleStatus] = Query(None, alias="status"),
     vehicle_type_id: Optional[UUID] = Query(None),
     region_id: Optional[UUID] = Query(None),
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(vehicle_viewers),
     db: Session = Depends(get_db),
 ):
     q = db.query(models.Vehicle).filter(models.Vehicle.company_id == current_user.company_id)
@@ -68,7 +69,7 @@ def list_vehicles(
 
 @router.get("/available", response_model=List[schemas.VehicleOut])
 def list_available_vehicles(
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(vehicle_viewers),
     db: Session = Depends(get_db),
 ):
     return (
@@ -84,7 +85,7 @@ def list_available_vehicles(
 @router.get("/{vehicle_id}", response_model=schemas.VehicleOut)
 def get_vehicle(
     vehicle_id: UUID,
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(vehicle_viewers),
     db: Session = Depends(get_db),
 ):
     vehicle = db.query(models.Vehicle).filter(

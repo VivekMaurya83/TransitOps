@@ -29,7 +29,7 @@ def create_driver(
 
 @router.get("/", response_model=List[schemas.DriverOut])
 def list_drivers(
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(safety_or_manager),
     db: Session = Depends(get_db),
 ):
     return (
@@ -41,7 +41,7 @@ def list_drivers(
 
 @router.get("/available", response_model=List[schemas.DriverOut])
 def list_available_drivers(
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(require_roles(models.UserRole.safety_officer, models.UserRole.fleet_manager, models.UserRole.dispatcher)),
     db: Session = Depends(get_db),
 ):
     from datetime import date
