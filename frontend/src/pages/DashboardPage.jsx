@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import { dashboardService } from '../services/api';
@@ -37,23 +38,28 @@ const tableRowVariants = {
 };
 
 // ─── Sub-components ───────────────────────────────────────────────
-function StatCard({ label, value, accent, border, index, loading }) {
+function StatCard({ label, value, accent, border, index, loading, icon }) {
   return (
     <motion.div
       custom={index}
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      className={`stat-card ${border || ''}`}
+      className={`stat-card p-md min-h-[96px] flex flex-col justify-between ${border || ''}`}
     >
-      <span className="text-label-caps font-bold text-secondary uppercase opacity-70 tracking-wider">
-        {label}
-      </span>
-      <div className="mt-xs">
+      <div className="flex items-start justify-between">
+        <span className="text-[11px] font-black text-secondary uppercase tracking-widest leading-tight">
+          {label}
+        </span>
+        {icon && (
+          <span className="material-symbols-outlined text-outline" style={{ fontSize: '18px' }}>{icon}</span>
+        )}
+      </div>
+      <div className="mt-auto pt-sm">
         {loading ? (
-          <div className="h-8 w-16 bg-surface-container-high rounded animate-pulse" />
+          <div className="h-10 w-16 bg-surface-container-high rounded animate-pulse" />
         ) : (
-          <span className={`text-display-lg data-mono font-bold ${accent || 'text-on-surface'}`}>
+          <span className={`text-[36px] data-mono font-black leading-none ${accent || 'text-on-surface'}`}>
             {value}
           </span>
         )}
@@ -102,11 +108,14 @@ function SkeletonRow() {
 // ─── Main Component ───────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [stats,         setStats]         = useState(null);
   const [trips,         setTrips]         = useState([]);
   const [vehicleStatus, setVehicleStatus] = useState({});
   const [filter,        setFilter]        = useState('all');
+  const [typeFilter,    setTypeFilter]    = useState('all');
+  const [regionFilter,  setRegionFilter]  = useState('all');
   const [loading,       setLoading]       = useState(true);
   const [tripsLoading,  setTripsLoading]  = useState(true);
 
@@ -143,17 +152,18 @@ export default function DashboardPage() {
   // Build stat cards from real API data
   const totalVehicles = stats?.total_vehicles ?? 0;
   const STAT_CARDS = [
-    { label: 'Total Fleet',      value: String(stats?.total_vehicles       ?? '--'), accent: 'text-on-surface' },
-    { label: 'Available',        value: String(stats?.available_vehicles    ?? '--'), accent: 'text-on-surface' },
-    { label: 'In Maintenance',   value: String(stats?.vehicles_in_maintenance ?? '--'), accent: 'text-tertiary' },
-    { label: 'Active Trips',     value: String(stats?.active_trips          ?? '--'), accent: 'text-primary', border: 'border-primary/40' },
-    { label: 'Pending Trips',    value: String(stats?.pending_trips         ?? '--'), accent: 'text-on-surface' },
-    { label: 'Utilization',      value: stats ? `${stats.fleet_utilization_percent}%` : '--', accent: 'text-on-surface' },
+    { label: 'Active Vehicles',  value: String(stats?.total_vehicles           ?? '--'), accent: 'text-primary',   icon: 'local_shipping',   border: 'border-primary/30' },
+    { label: 'Available',        value: String(stats?.available_vehicles        ?? '--'), accent: 'text-secondary', icon: 'check_circle' },
+    { label: 'In Maintenance',   value: String(stats?.vehicles_in_maintenance   ?? '--'), accent: 'text-on-tertiary-container', icon: 'build' },
+    { label: 'Active Trips',     value: String(stats?.active_trips              ?? '--'), accent: 'text-primary',   icon: 'route',            border: 'border-primary/40' },
+    { label: 'Pending Trips',    value: String(stats?.pending_trips             ?? '--'), accent: 'text-on-surface', icon: 'pending' },
+    { label: 'Drivers on Duty',  value: String(stats?.drivers_on_duty           ?? '--'), accent: 'text-secondary', icon: 'person_pin' },
+    { label: 'Fleet Utilization',value: stats ? `${stats.fleet_utilization_percent}%` : '--', accent: 'text-primary', icon: 'speed' },
   ];
 
   // Build vehicle status bars from real breakdown
   const VEHICLE_BARS = [
-    { label: 'Available', count: vehicleStatus.available ?? 0, color: 'bg-odoo-teal' },
+    { label: 'Available', count: vehicleStatus.available ?? 0, color: 'bg-secondary' },
     { label: 'On Trip',   count: vehicleStatus.on_trip   ?? 0, color: 'bg-primary' },
     { label: 'In Shop',   count: vehicleStatus.in_shop   ?? 0, color: 'bg-on-tertiary-container' },
     { label: 'Retired',   count: vehicleStatus.retired   ?? 0, color: 'bg-outline' },
@@ -168,17 +178,50 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
+          className="flex flex-wrap items-end justify-between gap-md"
         >
-          <h2 className="text-headline-md font-bold text-on-surface">
-            {greeting()}, {user?.full_name?.split(' ')[0] || 'Dispatcher'}
-          </h2>
-          <p className="text-body-sm text-secondary mt-1">
-            Here's your fleet overview for today.
-          </p>
+          <div>
+            <h2 className="text-[24px] font-black text-on-surface tracking-tight">
+              {greeting()}, {user?.full_name?.split(' ')[0] || 'User'}
+            </h2>
+            <p className="text-[13px] font-medium text-secondary mt-0.5">
+              Here's your fleet overview for today.
+            </p>
+          </div>
+
+          {/* ── Filters Row (from mockup) ───────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 }}
+            className="flex flex-wrap items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-xl px-md py-sm shadow-sm"
+          >
+            <span className="material-symbols-outlined text-outline" style={{ fontSize: '16px' }}>filter_list</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-secondary">Filters:</span>
+            {[
+              { label: 'Vehicle Type', state: typeFilter,   setter: setTypeFilter,   options: ['All', 'Truck', 'Van', 'Bus', 'Trailer'] },
+              { label: 'Status',       state: filter,        setter: setFilter,        options: ['All', 'available', 'on_trip', 'in_shop', 'retired'] },
+              { label: 'Region',       state: regionFilter,  setter: setRegionFilter,  options: ['All', 'North', 'South', 'East', 'West', 'Central'] },
+            ].map(f => (
+              <div key={f.label} className="flex items-center gap-xs">
+                <span className="text-[11px] font-bold text-secondary">{f.label}:</span>
+                <select
+                  value={f.state}
+                  onChange={e => f.setter(e.target.value)}
+                  className="text-[12px] font-bold border border-outline-variant rounded-lg px-sm py-1 bg-surface-container-low text-on-surface outline-none cursor-pointer hover:border-primary transition-colors"
+                  style={{ minWidth: '90px' }}
+                >
+                  {f.options.map(o => (
+                    <option key={o} value={o === 'All' ? 'all' : o}>{o === 'all' ? 'All' : o}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </motion.div>
         </motion.div>
 
-        {/* ── 6-Card Stat Grid ─────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-md">
+        {/* ── 7-Card Stat Grid ─────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-md mt-sm">
           {STAT_CARDS.map((stat, i) => (
             <StatCard key={stat.label} {...stat} index={i} loading={loading} />
           ))}
@@ -196,21 +239,22 @@ export default function DashboardPage() {
           >
             {/* Table Header */}
             <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <h3 className="text-headline-sm font-bold text-on-surface">Recent Trips</h3>
+              <h3 className="text-[16px] font-black text-on-surface">Recent Trips</h3>
               <div className="flex items-center gap-sm">
                 <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="bg-transparent border-none text-label-caps font-bold text-secondary focus:ring-0 cursor-pointer outline-none text-xs uppercase tracking-wider"
+                  className="text-[12px] font-bold border border-outline-variant rounded-lg px-sm py-1 bg-surface-container-lowest text-on-surface outline-none focus:border-primary cursor-pointer"
                 >
                   <option value="all">Status: All</option>
-                  <option value="on_trip">On Trip</option>
                   <option value="dispatched">Dispatched</option>
                   <option value="completed">Completed</option>
                   <option value="draft">Draft</option>
-                  <option value="delayed">Delayed</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
-                <button className="text-primary text-label-caps font-bold hover:underline text-xs uppercase tracking-wider">
+                <button
+                  className="text-[12px] font-black uppercase tracking-wider px-sm py-1 rounded-lg border border-primary/30 text-primary hover:bg-primary hover:text-on-primary transition-colors"
+                >
                   View All
                 </button>
               </div>
@@ -310,12 +354,12 @@ export default function DashboardPage() {
               {!loading && stats && (
                 <div className="pt-sm border-t border-outline-variant grid grid-cols-2 gap-sm">
                   <div className="text-center">
-                    <p className="data-mono text-headline-sm font-bold text-odoo-teal">{stats.drivers_on_duty ?? '—'}</p>
-                    <p className="text-label-sm text-secondary">Drivers on duty</p>
+                    <p className="data-mono text-headline-sm font-black text-secondary">{stats.drivers_on_duty ?? '—'}</p>
+                    <p className="text-[11px] font-medium text-secondary">Drivers on duty</p>
                   </div>
                   <div className="text-center">
-                    <p className="data-mono text-headline-sm font-bold text-primary">{stats.completed_trips ?? '—'}</p>
-                    <p className="text-label-sm text-secondary">Trips completed</p>
+                    <p className="data-mono text-headline-sm font-black text-primary">{stats.completed_trips ?? '—'}</p>
+                    <p className="text-[11px] font-medium text-secondary">Trips completed</p>
                   </div>
                 </div>
               )}

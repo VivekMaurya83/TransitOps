@@ -64,31 +64,55 @@
 
   /* ─ Status Chips ──────────────────────────────────────────── */
   .status-chip {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tight;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide;
   }
+  /* On Trip → Blue */
   .status-on-trip {
-    @apply status-chip bg-primary/10 text-primary;
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    @apply status-chip;
   }
+  /* Completed → Green */
   .status-completed {
-    @apply status-chip bg-secondary/10 text-secondary;
+    background-color: #dcfce7;
+    color: #15803d;
+    @apply status-chip;
   }
+  /* Dispatched → Amber/Orange */
   .status-dispatched {
-    @apply status-chip bg-secondary-container/30 text-secondary;
+    background-color: #fef3c7;
+    color: #b45309;
+    @apply status-chip;
   }
+  /* Draft → Gray */
   .status-draft {
-    @apply status-chip bg-surface-container-highest text-secondary;
+    background-color: #f1f5f9;
+    color: #475569;
+    @apply status-chip;
   }
+  /* Delayed / Cancelled → Red */
   .status-delayed {
-    @apply status-chip bg-error-container text-error;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    @apply status-chip;
   }
+  /* Available → Teal/Green */
   .status-available {
-    @apply status-chip bg-secondary/10 text-secondary;
+    background-color: #d1fae5;
+    color: #065f46;
+    @apply status-chip;
   }
+  /* Maintenance → Orange */
   .status-maintenance {
-    @apply status-chip bg-on-tertiary-container/20 text-tertiary;
+    background-color: #ffedd5;
+    color: #c2410c;
+    @apply status-chip;
   }
+  /* Retired → Slate */
   .status-retired {
-    @apply status-chip bg-outline/10 text-outline;
+    background-color: #f1f5f9;
+    color: #64748b;
+    @apply status-chip;
   }
 
   /* ─ Sidebar Nav Item ─────────────────────────────────────── */

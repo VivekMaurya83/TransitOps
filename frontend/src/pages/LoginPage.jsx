@@ -281,7 +281,7 @@ export default function LoginPage() {
               </label>
               <button type="button" onClick={() => navigate('/forgot-password')}
                 className="text-[13px] font-bold hover:underline transition-colors"
-                style={{ color: '#017E84' }}>
+                style={{ color: '#714b67' }}>
                 Forgot password?
               </button>
             </div>
@@ -311,7 +311,7 @@ export default function LoginPage() {
             <p className="text-center text-[13px] font-medium" style={{ color: '#80747a' }}>
               Don't have an account?{' '}
               <button type="button" onClick={() => navigate('/signup')}
-                className="font-bold hover:underline transition-colors" style={{ color: '#017E84' }}>
+                className="font-bold hover:underline transition-colors" style={{ color: '#714b67' }}>
                 Sign up
               </button>
             </p>
