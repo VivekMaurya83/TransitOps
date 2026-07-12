@@ -8,7 +8,8 @@ from .trip import Trip, TripStatus
 from .maintenance import MaintenanceLog, MaintenanceStatus
 from .fuel_expense import FuelLog, Expense, ExpenseType
 from .document import VehicleDocument, DriverDocument, DocumentStatus
-
+from .vehicle_type import VehicleTypeMaster
+from .region import Region
 __all__ = [
     "Company", "User", "UserRole", "AccountStatus",
     "Region", "VehicleTypeMaster",
