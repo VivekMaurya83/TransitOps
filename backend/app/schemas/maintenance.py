@@ -1,5 +1,5 @@
 from uuid import UUID
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 from decimal import Decimal
 from pydantic import BaseModel
@@ -17,9 +17,12 @@ class MaintenanceOut(BaseModel):
     vehicle_id: UUID
     maintenance_type: str
     description: Optional[str] = None
-    cost: Decimal
+    scheduled_date: Optional[date] = None
+    start_date: Optional[date] = None
+    completion_date: Optional[date] = None
+    estimated_cost: Decimal
+    actual_cost: Decimal
     status: MaintenanceStatus
-    opened_at: datetime
-    closed_at: Optional[datetime] = None
+    created_at: datetime
 
     model_config = {"from_attributes": True}

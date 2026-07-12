@@ -84,4 +84,3 @@ def open_maintenance(db: Session, vehicle: models.Vehicle) -> None:
 def close_maintenance(db: Session, vehicle: models.Vehicle) -> None:
     if vehicle.status != models.VehicleStatus.retired:
         vehicle.status = models.VehicleStatus.available
-    db.commit()

@@ -29,8 +29,13 @@ def open_maintenance_log(
 
     log = models.MaintenanceLog(
         company_id=current_user.company_id,
+        vehicle_id=payload.vehicle_id,
+        maintenance_type=payload.maintenance_type,
+        description=payload.description,
+        estimated_cost=payload.cost,
         created_by=current_user.id,
-        **payload.model_dump(),
+        status=models.MaintenanceStatus.active,
+        start_date=datetime.now(timezone.utc).date(),
     )
     trip_rules.open_maintenance(db, vehicle)
     db.add(log)
@@ -51,8 +56,9 @@ def close_maintenance_log(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Maintenance log not found.")
     vehicle = db.query(models.Vehicle).filter(models.Vehicle.id == log.vehicle_id).first()
 
-    log.status = models.MaintenanceStatus.closed
-    log.closed_at = datetime.now(timezone.utc)
+    log.status = models.MaintenanceStatus.completed
+    log.completion_date = datetime.now(timezone.utc).date()
+    log.completed_by = current_user.id
     trip_rules.close_maintenance(db, vehicle)
     db.commit()
     db.refresh(log)
@@ -66,6 +72,6 @@ def list_maintenance_logs(
     return (
         db.query(models.MaintenanceLog)
         .filter(models.MaintenanceLog.company_id == current_user.company_id)
-        .order_by(models.MaintenanceLog.opened_at.desc())
+        .order_by(models.MaintenanceLog.created_at.desc())
         .all()
     )

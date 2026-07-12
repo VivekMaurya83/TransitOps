@@ -55,7 +55,7 @@ def dispatch_trip(
     db: Session = Depends(get_db),
 ):
     trip, vehicle, driver = _get_trip_bundle(db, trip_id, current_user.company_id)
-    trip_rules.dispatch_trip(db, trip, vehicle, driver)
+    trip_rules.dispatch_trip(db, trip, vehicle, driver, current_user.id)
     return trip
 
 @router.post("/{trip_id}/complete", response_model=schemas.TripOut)
@@ -67,7 +67,7 @@ def complete_trip(
 ):
     trip, vehicle, driver = _get_trip_bundle(db, trip_id, current_user.company_id)
     trip_rules.complete_trip(
-        db, trip, vehicle, driver,
+        db, trip, vehicle, driver, current_user.id,
         payload.actual_distance, payload.fuel_consumed, payload.final_odometer,
     )
     return trip
@@ -79,7 +79,7 @@ def cancel_trip(
     db: Session = Depends(get_db),
 ):
     trip, vehicle, driver = _get_trip_bundle(db, trip_id, current_user.company_id)
-    trip_rules.cancel_trip(db, trip, vehicle, driver)
+    trip_rules.cancel_trip(db, trip, vehicle, driver, current_user.id)
     return trip
 
 @router.get("/", response_model=List[schemas.TripOut])
