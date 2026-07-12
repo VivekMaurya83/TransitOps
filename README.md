@@ -386,21 +386,18 @@ TransitOps has been validated across key operational workflows:
 
 ## 📸 Screenshots
 
-Screenshots will be added as the frontend implementation reaches final polish.
+![Dashboard](image.png)
 
-<!--
-![Dashboard](assets/dashboard.png)
+![Fleet Management](image-3.png)
 
-![Fleet Management](assets/fleet.png)
+![Driver Management](image-4.png)
 
-![Driver Management](assets/drivers.png)
+![Trip Management](image-5.png)
 
-![Trip Management](assets/trips.png)
+![Maintenance](image-8.png)
 
-![Maintenance](assets/maintenance.png)
-
-![Analytics](assets/analytics.png)
--->
+![Fuel Expenses](image-6.png)
+![Analytics](image-7.png)
 
 ---
 
