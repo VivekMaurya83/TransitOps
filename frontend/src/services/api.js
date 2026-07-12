@@ -227,33 +227,59 @@ export const adminService = {
 
 // ─── Dashboard Service ────────────────────────────────────────────────────────
 export const dashboardService = {
-  getStats: async () => request('/dashboard/stats', { method: 'GET' }, () => mockDb.stats),
+  /**
+   * GET /api/dashboard/stats
+   * Returns real KPI counts from DB: total_vehicles, available_vehicles, active_trips, etc.
+   */
+  getStats: async () => request('/dashboard/stats', { method: 'GET' }, () => ({
+    total_vehicles: 53,
+    available_vehicles: 42,
+    vehicles_in_maintenance: 5,
+    vehicles_on_trip: 18,
+    retired_vehicles: 4,
+    active_trips: 18,
+    pending_trips: 9,
+    completed_trips: 120,
+    drivers_on_duty: 15,
+    available_drivers: 22,
+    fleet_utilization_percent: 81.0,
+  })),
 
-  getTransactions: async (filter = '') => request(
-    `/dashboard/transactions?filter=${encodeURIComponent(filter)}`,
+  /**
+   * GET /api/dashboard/recent-trips?limit=10
+   * Returns recent trip records from the DB.
+   */
+  getRecentTrips: async (limit = 10) => request(
+    `/dashboard/recent-trips?limit=${limit}`,
     { method: 'GET' },
-    () => {
-      if (!filter) return mockDb.transactions;
-      const q = filter.toLowerCase();
-      return mockDb.transactions.filter(t =>
-        t.client.toLowerCase().includes(q) || t.id.toLowerCase().includes(q) || t.status.toLowerCase().includes(q)
-      );
-    }
+    () => [
+      { id: 'mock-1', trip_number: 'TR001', source: 'Mumbai', destination: 'Pune',       status: 'dispatched', created_at: new Date().toISOString() },
+      { id: 'mock-2', trip_number: 'TR002', source: 'Delhi',  destination: 'Agra',        status: 'completed',  created_at: new Date().toISOString() },
+      { id: 'mock-3', trip_number: 'TR003', source: 'Surat',  destination: 'Ahmedabad',   status: 'draft',      created_at: new Date().toISOString() },
+    ]
   ),
 
-  getRevenueData: async (timeRange = 'Last 30 Days') => request(
-    `/dashboard/revenue?range=${encodeURIComponent(timeRange)}`,
+  /**
+   * GET /api/dashboard/vehicle-status-breakdown
+   * Returns { available: N, on_trip: N, in_shop: N, retired: N }
+   */
+  getVehicleStatusBreakdown: async () => request(
+    '/dashboard/vehicle-status-breakdown',
     { method: 'GET' },
-    () => {
-      const datasets = {
-        'Last 30 Days': [15, 30, 25, 45, 35, 60, 50, 75, 65, 85, 70, 95],
-        'This Quarter': [120, 150, 140, 180, 160, 210, 190, 240, 220, 280, 260, 310],
-        'This Year': [400, 480, 430, 590, 540, 680, 620, 810, 750, 940, 880, 1240],
-      };
-      return datasets[timeRange] || datasets['Last 30 Days'];
-    }
+    () => ({ available: 42, on_trip: 18, in_shop: 5, retired: 4 })
+  ),
+
+  /**
+   * GET /api/dashboard/driver-status-breakdown
+   * Returns { available: N, on_trip: N, off_duty: N, suspended: N }
+   */
+  getDriverStatusBreakdown: async () => request(
+    '/dashboard/driver-status-breakdown',
+    { method: 'GET' },
+    () => ({ available: 22, on_trip: 15, off_duty: 8, suspended: 1 })
   ),
 };
+
 
 // ─── Analytics Service ────────────────────────────────────────────────────────
 export const analyticsService = {

@@ -25,6 +25,8 @@ class AdminRegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    role: Optional[str] = None  # RBAC hint from frontend; real role resolved from DB
+
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr

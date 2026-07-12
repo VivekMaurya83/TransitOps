@@ -9,6 +9,8 @@ import { useAuth } from './context/AuthContext';
 
 // ─── Page Imports ─────────────────────────────────────────────────────────────
 import LoginPage           from './pages/LoginPage';
+import ForgotPasswordPage  from './pages/ForgotPasswordPage';
+import ChangePasswordPage  from './pages/ChangePasswordPage';
 import DashboardPage       from './pages/DashboardPage';
 import TripDispatcherPage  from './pages/TripDispatcherPage';
 import VehicleRegistryPage from './pages/VehicleRegistryPage';
@@ -57,6 +59,15 @@ export default function App() {
           <PublicRoute>
             <PageWrapper><LoginPage /></PageWrapper>
           </PublicRoute>
+        } />
+
+        <Route path="/forgot-password" element={
+          <PageWrapper><ForgotPasswordPage /></PageWrapper>
+        } />
+
+        {/* Semi-protected: needs token, but user hasn't fully onboarded */}
+        <Route path="/change-password" element={
+          <PageWrapper><ChangePasswordPage /></PageWrapper>
         } />
 
         {/* ── Protected — TransitOps pages ────────────────────── */}

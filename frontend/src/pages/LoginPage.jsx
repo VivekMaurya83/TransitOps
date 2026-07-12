@@ -49,14 +49,20 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login({ email: form.email, password: form.password, role: form.role });
-      navigate('/dashboard');
+      const result = await login({ email: form.email, password: form.password, role: form.role });
+      // If backend sets must_change_password, force the user to change their password first
+      if (result.mustChangePassword) {
+        navigate('/change-password');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err?.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <main className="flex min-h-screen">
@@ -212,9 +218,14 @@ export default function LoginPage() {
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <a href="#" className="text-sm font-medium text-blue-500 hover:text-blue-600">
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline"
+              >
                 Forgot password?
-              </a>
+              </button>
+
             </div>
 
             {/* Submit */}

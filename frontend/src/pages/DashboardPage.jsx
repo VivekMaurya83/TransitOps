@@ -1,45 +1,22 @@
 /**
  * DashboardPage — TransitOps Fleet Dashboard
- * Exact Stitch design: 6-stat grid, 12-col layout, recent trips table,
- * vehicle status bars, live fleet board map placeholder.
+ * Fully connected to backend: stats, recent trips, vehicle/driver status breakdown.
+ * Falls back to mock data if backend is unreachable.
  */
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { dashboardService } from '../services/api';
 
-// ─── Mock Data ────────────────────────────────────────────────────
-const STATS = [
-  { label: 'Total Fleet',    value: '53', accent: 'text-on-surface' },
-  { label: 'Available',      value: '42', accent: 'text-on-surface' },
-  { label: 'In Maintenance', value: '05', accent: 'text-tertiary',   highlight: false },
-  { label: 'Active Trips',   value: '18', accent: 'text-primary',    border: 'border-primary/40' },
-  { label: 'Pending Trips',  value: '09', accent: 'text-on-surface' },
-  { label: 'Utilization',    value: '81%',accent: 'text-on-surface' },
-];
-
-const TRIPS = [
-  { id: 'TR001', vehicle: 'VAN-05',  driver: 'Alex',   status: 'on-trip',    eta: '45 min'        },
-  { id: 'TR002', vehicle: 'TRX-12',  driver: 'Sam',    status: 'completed',  eta: '--'            },
-  { id: 'TR003', vehicle: 'MINI-08', driver: 'Priya',  status: 'dispatched', eta: '3h 10m'        },
-  { id: 'TR004', vehicle: 'VAN-03',  driver: 'Suresh', status: 'draft',      eta: 'Awaiting vehicle' },
-  { id: 'TR005', vehicle: 'TRX-15',  driver: 'Alex',   status: 'on-trip',    eta: '1h 22m'        },
-  { id: 'TR006', vehicle: 'VAN-09',  driver: 'John',   status: 'delayed',    eta: '25 min'        },
-];
-
-const VEHICLE_STATUS = [
-  { label: 'Available', count: 26, pct: 49, color: 'bg-odoo-teal' },
-  { label: 'On Trip',   count: 18, pct: 34, color: 'bg-primary' },
-  { label: 'In Shop',   count: 5,  pct: 9,  color: 'bg-on-tertiary-container' },
-  { label: 'Retired',   count: 4,  pct: 8,  color: 'bg-outline' },
-];
-
+// ─── Status Config ─────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  'on-trip':    { label: 'On Trip',    cls: 'status-on-trip' },
-  'completed':  { label: 'Completed',  cls: 'status-completed' },
+  'on_trip':    { label: 'On Trip',    cls: 'status-on-trip' },
   'dispatched': { label: 'Dispatched', cls: 'status-dispatched' },
+  'completed':  { label: 'Completed',  cls: 'status-completed' },
   'draft':      { label: 'Draft',      cls: 'status-draft' },
   'delayed':    { label: 'Delayed',    cls: 'status-delayed' },
+  'cancelled':  { label: 'Cancelled',  cls: 'status-retired' },
 };
 
 // ─── Animation Variants ────────────────────────────────────────────
@@ -60,22 +37,26 @@ const tableRowVariants = {
 };
 
 // ─── Sub-components ───────────────────────────────────────────────
-function StatCard({ stat, index }) {
+function StatCard({ label, value, accent, border, index, loading }) {
   return (
     <motion.div
       custom={index}
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      className={`stat-card ${stat.border || ''}`}
+      className={`stat-card ${border || ''}`}
     >
       <span className="text-label-caps font-bold text-secondary uppercase opacity-70 tracking-wider">
-        {stat.label}
+        {label}
       </span>
       <div className="mt-xs">
-        <span className={`text-display-lg data-mono font-bold ${stat.accent}`}>
-          {stat.value}
-        </span>
+        {loading ? (
+          <div className="h-8 w-16 bg-surface-container-high rounded animate-pulse" />
+        ) : (
+          <span className={`text-display-lg data-mono font-bold ${accent || 'text-on-surface'}`}>
+            {value}
+          </span>
+        )}
       </div>
     </motion.div>
   );
@@ -86,36 +67,71 @@ function TripStatusChip({ status }) {
   return <span className={cfg.cls}>{cfg.label}</span>;
 }
 
-function VehicleStatusBar({ item, index }) {
+function VehicleStatusBar({ label, count, total, color, index }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   const [width, setWidth] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => setWidth(item.pct), 400 + index * 150);
+    const t = setTimeout(() => setWidth(pct), 400 + index * 150);
     return () => clearTimeout(t);
-  }, [item.pct, index]);
+  }, [pct, index]);
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-label-caps font-bold text-secondary uppercase">
-        <span>{item.label}</span>
-        <span className="data-mono text-on-surface">{item.count}</span>
+        <span>{label}</span>
+        <span className="data-mono text-on-surface">{count}</span>
       </div>
       <div className="progress-bar-track">
-        <div
-          className={`progress-bar-fill ${item.color}`}
-          style={{ width: `${width}%` }}
-        />
+        <div className={`progress-bar-fill ${color}`} style={{ width: `${width}%` }} />
       </div>
     </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <tr className="table-row">
+      {[1,2,3,4,5].map(i => (
+        <td key={i} className="table-cell">
+          <div className="h-4 bg-surface-container-high rounded animate-pulse" />
+        </td>
+      ))}
+    </tr>
   );
 }
 
 // ─── Main Component ───────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [filter, setFilter] = useState('all');
+
+  const [stats,         setStats]         = useState(null);
+  const [trips,         setTrips]         = useState([]);
+  const [vehicleStatus, setVehicleStatus] = useState({});
+  const [filter,        setFilter]        = useState('all');
+  const [loading,       setLoading]       = useState(true);
+  const [tripsLoading,  setTripsLoading]  = useState(true);
+
+  // Load stats + vehicle breakdown together
+  useEffect(() => {
+    Promise.all([
+      dashboardService.getStats(),
+      dashboardService.getVehicleStatusBreakdown(),
+    ])
+      .then(([s, vs]) => { setStats(s); setVehicleStatus(vs); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Load recent trips
+  useEffect(() => {
+    dashboardService.getRecentTrips(10)
+      .then(setTrips)
+      .catch(console.error)
+      .finally(() => setTripsLoading(false));
+  }, []);
 
   const filteredTrips = filter === 'all'
-    ? TRIPS
-    : TRIPS.filter((t) => t.status === filter);
+    ? trips
+    : trips.filter((t) => t.status === filter);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -123,6 +139,25 @@ export default function DashboardPage() {
     if (h < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  // Build stat cards from real API data
+  const totalVehicles = stats?.total_vehicles ?? 0;
+  const STAT_CARDS = [
+    { label: 'Total Fleet',      value: String(stats?.total_vehicles       ?? '--'), accent: 'text-on-surface' },
+    { label: 'Available',        value: String(stats?.available_vehicles    ?? '--'), accent: 'text-on-surface' },
+    { label: 'In Maintenance',   value: String(stats?.vehicles_in_maintenance ?? '--'), accent: 'text-tertiary' },
+    { label: 'Active Trips',     value: String(stats?.active_trips          ?? '--'), accent: 'text-primary', border: 'border-primary/40' },
+    { label: 'Pending Trips',    value: String(stats?.pending_trips         ?? '--'), accent: 'text-on-surface' },
+    { label: 'Utilization',      value: stats ? `${stats.fleet_utilization_percent}%` : '--', accent: 'text-on-surface' },
+  ];
+
+  // Build vehicle status bars from real breakdown
+  const VEHICLE_BARS = [
+    { label: 'Available', count: vehicleStatus.available ?? 0, color: 'bg-odoo-teal' },
+    { label: 'On Trip',   count: vehicleStatus.on_trip   ?? 0, color: 'bg-primary' },
+    { label: 'In Shop',   count: vehicleStatus.in_shop   ?? 0, color: 'bg-on-tertiary-container' },
+    { label: 'Retired',   count: vehicleStatus.retired   ?? 0, color: 'bg-outline' },
+  ];
 
   return (
     <DashboardLayout pageTitle="Dashboard">
@@ -144,8 +179,8 @@ export default function DashboardPage() {
 
         {/* ── 6-Card Stat Grid ─────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-md">
-          {STATS.map((stat, i) => (
-            <StatCard key={stat.label} stat={stat} index={i} />
+          {STAT_CARDS.map((stat, i) => (
+            <StatCard key={stat.label} {...stat} index={i} loading={loading} />
           ))}
         </div>
 
@@ -169,9 +204,10 @@ export default function DashboardPage() {
                   className="bg-transparent border-none text-label-caps font-bold text-secondary focus:ring-0 cursor-pointer outline-none text-xs uppercase tracking-wider"
                 >
                   <option value="all">Status: All</option>
-                  <option value="on-trip">On Trip</option>
-                  <option value="completed">Completed</option>
+                  <option value="on_trip">On Trip</option>
                   <option value="dispatched">Dispatched</option>
+                  <option value="completed">Completed</option>
+                  <option value="draft">Draft</option>
                   <option value="delayed">Delayed</option>
                 </select>
                 <button className="text-primary text-label-caps font-bold hover:underline text-xs uppercase tracking-wider">
@@ -185,40 +221,52 @@ export default function DashboardPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-surface-container-high">
-                    <th className="table-header-cell">Trip ID</th>
-                    <th className="table-header-cell">Vehicle</th>
-                    <th className="table-header-cell">Driver</th>
+                    <th className="table-header-cell">Trip #</th>
+                    <th className="table-header-cell">From</th>
+                    <th className="table-header-cell">To</th>
                     <th className="table-header-cell">Status</th>
-                    <th className="table-header-cell text-right">ETA</th>
+                    <th className="table-header-cell text-right">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
-                  {filteredTrips.map((trip, i) => (
-                    <motion.tr
-                      key={trip.id}
-                      custom={i}
-                      variants={tableRowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="table-row"
-                    >
-                      <td className="table-cell">
-                        <span className="data-mono text-[13px] text-on-surface">{trip.id}</span>
+                  {tripsLoading ? (
+                    [1,2,3,4,5].map(i => <SkeletonRow key={i} />)
+                  ) : filteredTrips.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="table-cell text-center text-secondary py-8">
+                        No trips found.
                       </td>
-                      <td className="table-cell text-body-sm text-on-surface">{trip.vehicle}</td>
-                      <td className="table-cell text-body-sm text-on-surface">{trip.driver}</td>
-                      <td className="table-cell">
-                        <TripStatusChip status={trip.status} />
-                      </td>
-                      <td className="table-cell text-right">
-                        {trip.status === 'draft' ? (
-                          <span className="text-body-sm text-outline italic">{trip.eta}</span>
-                        ) : (
-                          <span className="data-mono text-[13px] text-on-surface">{trip.eta}</span>
-                        )}
-                      </td>
-                    </motion.tr>
-                  ))}
+                    </tr>
+                  ) : (
+                    filteredTrips.map((trip, i) => (
+                      <motion.tr
+                        key={trip.id}
+                        custom={i}
+                        variants={tableRowVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="table-row"
+                      >
+                        <td className="table-cell">
+                          <span className="data-mono text-[13px] text-on-surface">
+                            {trip.trip_number || trip.id?.slice(0, 8)}
+                          </span>
+                        </td>
+                        <td className="table-cell text-body-sm text-on-surface">{trip.source || '—'}</td>
+                        <td className="table-cell text-body-sm text-on-surface">{trip.destination || '—'}</td>
+                        <td className="table-cell">
+                          <TripStatusChip status={trip.status} />
+                        </td>
+                        <td className="table-cell text-right">
+                          <span className="data-mono text-[13px] text-secondary">
+                            {trip.created_at
+                              ? new Date(trip.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                              : '—'}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -227,7 +275,7 @@ export default function DashboardPage() {
           {/* Right column — 4 cols */}
           <div className="lg:col-span-4 space-y-lg">
 
-            {/* Vehicle Status */}
+            {/* Vehicle Status Breakdown */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -239,10 +287,38 @@ export default function DashboardPage() {
                 <span className="material-symbols-outlined text-outline" style={{ fontSize: '18px' }}>info</span>
               </div>
               <div className="space-y-sm">
-                {VEHICLE_STATUS.map((item, i) => (
-                  <VehicleStatusBar key={item.label} item={item} index={i} />
-                ))}
+                {loading ? (
+                  [1,2,3,4].map(i => (
+                    <div key={i} className="space-y-1">
+                      <div className="h-3 bg-surface-container-high rounded animate-pulse w-3/4" />
+                      <div className="h-2 bg-surface-container-high rounded-full animate-pulse" />
+                    </div>
+                  ))
+                ) : (
+                  VEHICLE_BARS.map((item, i) => (
+                    <VehicleStatusBar
+                      key={item.label}
+                      {...item}
+                      total={totalVehicles}
+                      index={i}
+                    />
+                  ))
+                )}
               </div>
+
+              {/* Quick stats row */}
+              {!loading && stats && (
+                <div className="pt-sm border-t border-outline-variant grid grid-cols-2 gap-sm">
+                  <div className="text-center">
+                    <p className="data-mono text-headline-sm font-bold text-odoo-teal">{stats.drivers_on_duty ?? '—'}</p>
+                    <p className="text-label-sm text-secondary">Drivers on duty</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="data-mono text-headline-sm font-bold text-primary">{stats.completed_trips ?? '—'}</p>
+                    <p className="text-label-sm text-secondary">Trips completed</p>
+                  </div>
+                </div>
+              )}
             </motion.div>
 
             {/* Live Fleet Board (Map placeholder) */}
@@ -284,7 +360,9 @@ export default function DashboardPage() {
               {/* Info badge */}
               <div className="absolute top-md left-md bg-surface-container-lowest/90 backdrop-blur-sm border border-outline-variant p-sm rounded-lg shadow-lg z-10">
                 <p className="text-label-caps font-bold text-on-surface">Live Fleet Board</p>
-                <p className="text-[10px] text-secondary mt-0.5">18 vehicles active across routes</p>
+                <p className="text-[10px] text-secondary mt-0.5">
+                  {stats?.vehicles_on_trip ?? '—'} vehicles active across routes
+                </p>
               </div>
 
               {/* Open Map button */}
