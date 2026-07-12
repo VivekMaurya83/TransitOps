@@ -58,6 +58,7 @@ export default function DriversPage() {
   const [showModal, setShowModal]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast]           = useState(null);
+  const [view, setView]             = useState('list'); // 'card' | 'list'
 
   const [form, setForm] = useState({
     full_name: '', license_number: '', license_category: 'LMV',
@@ -106,7 +107,12 @@ export default function DriversPage() {
       const res = await fetch(`${BASE_URL}/drivers/${driverId}`, {
         method: 'PUT', headers, body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) { showToast('Driver status updated'); fetchDrivers(); }
+      if (res.ok) {
+        const updated = await res.json();
+        showToast('Driver status updated');
+        setSelected(updated);
+        fetchDrivers();
+      }
       else { const err = await res.json().catch(() => ({})); showToast(err.detail || 'Failed to update', 'error'); }
     } catch { showToast('Network error', 'error'); }
   };
@@ -129,12 +135,31 @@ export default function DriversPage() {
             <h2 className="page-title">Drivers & Safety Profiles</h2>
             <p className="page-subtitle">{drivers.length} registered drivers</p>
           </div>
-          {canEdit && (
-            <button onClick={() => setShowModal(true)} className="btn-primary" id="add-driver-btn">
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person_add</span>
-              Add Driver
-            </button>
-          )}
+          <div className="flex items-center gap-sm">
+            {/* View Toggle */}
+            <div className="flex bg-surface-container-high rounded-lg p-0.5">
+              {['card', 'list'].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-sm py-1 rounded text-label-caps font-bold uppercase transition-all ${
+                    view === v ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-secondary'
+                  }`}
+                  title={v === 'card' ? 'Card View' : 'Table View'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    {v === 'card' ? 'grid_view' : 'view_list'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {canEdit && (
+              <button onClick={() => setShowModal(true)} className="btn-primary" id="add-driver-btn">
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person_add</span>
+                Add Driver
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -143,82 +168,161 @@ export default function DriversPage() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search driver or license..." className="search-input pl-9" />
         </div>
 
-        {/* Grid */}
+        {/* Grid/List views */}
         {loading ? (
           <div className="flex justify-center items-center h-40">
             <span className="material-symbols-outlined animate-spin text-primary" style={{ fontSize: '32px' }}>autorenew</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-md">
-            {filtered.map((driver, i) => {
-              const sm = STATUS_MAP[driver.status] || { cls: 'status-draft', label: driver.status };
-              const isSelected = selected?.id === driver.id;
-              const isExpired = driver.license_expired;
-              return (
-                <motion.div key={driver.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }} onClick={() => setSelected(isSelected ? null : driver)}
-                  className={`card p-md cursor-pointer transition-all hover:border-primary hover:shadow-sm ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}`}>
+          <>
+            {view === 'card' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-md">
+                {filtered.map((driver, i) => {
+                  const sm = STATUS_MAP[driver.status] || { cls: 'status-draft', label: driver.status };
+                  const isSelected = selected?.id === driver.id;
+                  const isExpired = driver.license_expired;
+                  return (
+                    <motion.div key={driver.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.07 }} onClick={() => setSelected(isSelected ? null : driver)}
+                      className={`card p-md cursor-pointer transition-all hover:border-primary hover:shadow-sm ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}`}>
 
-                  <div className="flex items-start justify-between mb-sm">
-                    <div className="flex items-center gap-sm">
-                      <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
-                        <span className="text-body-sm font-bold text-primary">{initials(driver.full_name)}</span>
+                      <div className="flex items-start justify-between mb-sm">
+                        <div className="flex items-center gap-sm">
+                          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+                            <span className="text-body-sm font-bold text-primary">{initials(driver.full_name)}</span>
+                          </div>
+                          <div>
+                            <p className="text-body-sm font-bold text-on-surface">{driver.full_name}</p>
+                            <p className="text-label-caps text-secondary">{driver.license_category} License</p>
+                          </div>
+                        </div>
+                        <span className={sm.cls}>{sm.label}</span>
                       </div>
-                      <div>
-                        <p className="text-body-sm font-bold text-on-surface">{driver.full_name}</p>
-                        <p className="text-label-caps text-secondary">{driver.license_category} License</p>
+
+                      <div className="flex items-center justify-between mb-sm">
+                        <SafetyScore score={Math.round(driver.safety_score || 80)} />
+                        <div className="text-right">
+                          <p className="data-mono text-[13px] font-bold text-on-surface">{driver.total_trips || 0}</p>
+                          <p className="text-label-caps text-secondary">Trips</p>
+                        </div>
                       </div>
-                    </div>
-                    <span className={sm.cls}>{sm.label}</span>
-                  </div>
 
-                  <div className="flex items-center justify-between mb-sm">
-                    <SafetyScore score={Math.round(driver.safety_score || 80)} />
-                    <div className="text-right">
-                      <p className="data-mono text-[13px] font-bold text-on-surface">{driver.total_trips || 0}</p>
-                      <p className="text-label-caps text-secondary">Trips</p>
-                    </div>
-                  </div>
+                      <div className="flex items-center justify-between pt-xs border-t border-outline-variant/60">
+                        <span className="data-mono text-[11px] text-secondary">{driver.license_number}</span>
+                        {isExpired && (
+                          <span className="flex items-center gap-xs text-[10px] text-red-600 font-bold">
+                            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>warning</span>
+                            Expired
+                          </span>
+                        )}
+                        {!isExpired && (
+                          <span className="text-[10px] text-secondary">Exp: {driver.license_expiry_date}</span>
+                        )}
+                      </div>
 
-                  <div className="flex items-center justify-between pt-xs border-t border-outline-variant/60">
-                    <span className="data-mono text-[11px] text-secondary">{driver.license_number}</span>
-                    {isExpired && (
-                      <span className="flex items-center gap-xs text-[10px] text-red-600 font-bold">
-                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>warning</span>
-                        Expired
-                      </span>
-                    )}
-                    {!isExpired && (
-                      <span className="text-[10px] text-secondary">Exp: {driver.license_expiry_date}</span>
-                    )}
-                  </div>
-
-                  {canEdit && (
-                    <div className="flex gap-xs mt-sm pt-xs border-t border-outline-variant/40" onClick={e => e.stopPropagation()}>
-                      {driver.status !== 'off_duty' && (
-                        <button onClick={() => handleStatusChange(driver.id, 'off_duty')}
-                          className="flex-1 py-1 text-[10px] font-bold rounded border border-outline-variant text-secondary hover:bg-surface-container-high transition-colors">
-                          Mark Off Duty
-                        </button>
+                      {canEdit && (
+                        <div className="flex gap-xs mt-sm pt-xs border-t border-outline-variant/40" onClick={e => e.stopPropagation()}>
+                          {driver.status !== 'off_duty' && (
+                            <button onClick={() => handleStatusChange(driver.id, 'off_duty')}
+                              className="flex-1 py-1 text-[10px] font-bold rounded border border-outline-variant text-secondary hover:bg-surface-container-high transition-colors">
+                              Mark Off Duty
+                            </button>
+                          )}
+                          {driver.status === 'off_duty' && (
+                            <button onClick={() => handleStatusChange(driver.id, 'available')}
+                              className="flex-1 py-1 text-[10px] font-bold rounded border border-primary text-primary hover:bg-primary/5 transition-colors">
+                              Mark Available
+                            </button>
+                          )}
+                        </div>
                       )}
-                      {driver.status === 'off_duty' && (
-                        <button onClick={() => handleStatusChange(driver.id, 'available')}
-                          className="flex-1 py-1 text-[10px] font-bold rounded border border-primary text-primary hover:bg-primary/5 transition-colors">
-                          Mark Available
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-            {filtered.length === 0 && (
-              <div className="col-span-3 py-16 text-center">
-                <span className="material-symbols-outlined text-outline" style={{ fontSize: '48px' }}>person_off</span>
-                <p className="text-body-sm text-secondary mt-2">{drivers.length === 0 ? 'No drivers yet. Add your first driver.' : 'No drivers match the search.'}</p>
+                    </motion.div>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <div className="col-span-3 py-16 text-center">
+                    <span className="material-symbols-outlined text-outline" style={{ fontSize: '48px' }}>person_off</span>
+                    <p className="text-body-sm text-secondary mt-2">{drivers.length === 0 ? 'No drivers yet. Add your first driver.' : 'No drivers match the search.'}</p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+
+            {view === 'list' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-surface-container-high">
+                        <th className="table-header-cell">Driver</th>
+                        <th className="table-header-cell">License No.</th>
+                        <th className="table-header-cell">Category</th>
+                        <th className="table-header-cell">Expiry</th>
+                        <th className="table-header-cell">Contact</th>
+                        <th className="table-header-cell">Trips</th>
+                        <th className="table-header-cell">Safety</th>
+                        <th className="table-header-cell">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant">
+                      {filtered.map((driver, i) => {
+                        const sm = STATUS_MAP[driver.status] || { cls: 'status-draft', label: driver.status };
+                        const isSelected = selected?.id === driver.id;
+                        const isExpired = driver.license_expired;
+                        return (
+                          <motion.tr
+                            key={driver.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.03 }}
+                            onClick={() => setSelected(isSelected ? null : driver)}
+                            className={`table-row cursor-pointer ${
+                              isSelected ? 'bg-primary/5 border-l-4 border-l-primary' : ''
+                            }`}
+                          >
+                            <td className="table-cell">
+                              <div className="flex items-center gap-sm">
+                                <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[11px] font-bold text-primary">{initials(driver.full_name)}</span>
+                                </div>
+                                <span className="font-bold text-on-surface">{driver.full_name}</span>
+                              </div>
+                            </td>
+                            <td className="table-cell text-body-sm data-mono text-secondary">{driver.license_number}</td>
+                            <td className="table-cell text-body-sm text-on-surface">{driver.license_category}</td>
+                            <td className="table-cell text-body-sm text-on-surface-variant">
+                              {isExpired ? (
+                                <span className="text-red-600 font-bold flex items-center gap-0.5 animate-pulse">
+                                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>error</span>
+                                  {driver.license_expiry_date}
+                                </span>
+                              ) : (
+                                driver.license_expiry_date
+                              )}
+                            </td>
+                            <td className="table-cell text-body-sm text-on-surface">{driver.contact_number || '—'}</td>
+                            <td className="table-cell text-body-sm data-mono text-on-surface">{driver.total_trips || 0}</td>
+                            <td className="table-cell">
+                              <span className="font-bold text-sm" style={{ color: driver.safety_score >= 90 ? '#017E84' : driver.safety_score >= 75 ? '#714b67' : '#ba1a1a' }}>
+                                {Math.round(driver.safety_score || 80)}%
+                              </span>
+                            </td>
+                            <td className="table-cell"><span className={sm.cls}>{sm.label}</span></td>
+                          </motion.tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {filtered.length === 0 && (
+                    <div className="py-16 text-center">
+                      <span className="material-symbols-outlined text-outline" style={{ fontSize: '48px' }}>person_off</span>
+                      <p className="text-body-sm text-secondary mt-2">No drivers found</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
 
         {/* Detail Panel */}
@@ -252,6 +356,34 @@ export default function DriversPage() {
                   </div>
                 ))}
               </div>
+
+              {canEdit && (
+                <div className="mt-lg pt-md border-t border-outline-variant">
+                  <p className="text-label-caps text-secondary font-bold uppercase mb-xs">Toggle Stat</p>
+                  <div className="flex flex-wrap gap-xs">
+                    {[
+                      { key: 'available', label: 'Available', cls: 'status-available hover:brightness-95' },
+                      { key: 'on_trip',   label: 'On Trip',   cls: 'status-on-trip hover:brightness-95' },
+                      { key: 'off_duty',  label: 'Off Duty',  cls: 'status-draft hover:brightness-95' },
+                      { key: 'suspended', label: 'Suspended', cls: 'status-delayed hover:brightness-95' },
+                    ].map(stat => (
+                      <button
+                        key={stat.key}
+                        type="button"
+                        onClick={() => handleStatusChange(selected.id, stat.key)}
+                        className={`px-sm py-1.5 rounded-full text-label-caps font-bold uppercase transition-all ${stat.cls} ${
+                          selected.status === stat.key ? 'ring-2 ring-primary/40' : 'opacity-70'
+                        }`}
+                      >
+                        {stat.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-amber-600 italic mt-xs font-semibold">
+                    Rule: Expired license or Suspended status blocks the driver from trip assignment.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

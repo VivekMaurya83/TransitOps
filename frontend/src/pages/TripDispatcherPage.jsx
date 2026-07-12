@@ -99,7 +99,7 @@ export default function TripDispatcherPage() {
   const [drivers, setDrivers]       = useState([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState('');
-  const [view, setView]             = useState('kanban');
+  const [view, setView]             = useState('list');
   const [showModal, setShowModal]   = useState(false);
   const [showComplete, setShowComplete] = useState(null);  // trip id to complete
   const [submitting, setSubmitting] = useState(false);
