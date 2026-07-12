@@ -13,7 +13,7 @@ from ..services import trip_rules
 from ..utils.generators import generate_trip_number
 
 router = APIRouter(prefix="/api/trips", tags=["trips"])
-dispatcher_role = require_roles(models.UserRole.dispatcher, models.UserRole.fleet_manager)
+dispatcher_role = require_roles(models.UserRole.dispatcher)
 
 def _get_trip_bundle(db: Session, trip_id: UUID, company_id: UUID):
     trip = db.query(models.Trip).filter(models.Trip.id == trip_id, models.Trip.company_id == company_id).first()
@@ -86,7 +86,7 @@ def cancel_trip(
 
 @router.get("/", response_model=List[schemas.TripOut])
 def list_trips(
-    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    current_user: models.User = Depends(require_roles(models.UserRole.dispatcher, models.UserRole.safety_officer)),
     db: Session = Depends(get_db),
 ):
     return (

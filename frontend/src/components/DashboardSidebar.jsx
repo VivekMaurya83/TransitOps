@@ -59,6 +59,30 @@ export default function DashboardSidebar() {
     .slice(0, 2)
     .toUpperCase();
 
+  const isAllowed = (path) => {
+    if (user?.role === 'admin') return true;
+    switch (path) {
+      case '/dashboard':
+      case '/settings':
+        return true;
+      case '/fleet':
+      case '/maintenance':
+        return ['fleet_manager', 'dispatcher', 'financial_analyst'].includes(user?.role);
+      case '/drivers':
+        return ['fleet_manager', 'safety_officer'].includes(user?.role);
+      case '/trips':
+        return ['dispatcher', 'safety_officer'].includes(user?.role);
+      case '/fuel':
+        return ['financial_analyst'].includes(user?.role);
+      case '/analytics':
+        return ['fleet_manager', 'financial_analyst'].includes(user?.role);
+      default:
+        return false;
+    }
+  };
+
+  const allowedNavItems = NAV_ITEMS.filter(item => isAllowed(item.to));
+
   return (
     <>
       {/* ── Desktop Sidebar ─────────────────────────────────────── */}
@@ -89,7 +113,7 @@ export default function DashboardSidebar() {
         {/* Nav Items */}
         <nav className="flex-1 mt-xs overflow-y-auto custom-scrollbar">
           <ul className="space-y-0.5">
-            {NAV_ITEMS.map((item, i) => (
+            {allowedNavItems.map((item, i) => (
               <motion.li key={item.to} custom={i} variants={navItemVariants} initial="hidden" animate="visible">
                 <NavLink
                   to={item.to}
@@ -173,7 +197,7 @@ export default function DashboardSidebar() {
 
       {/* ── Mobile Bottom Navigation ─────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-around z-50">
-        {BOTTOM_NAV.map((item) => (
+        {BOTTOM_NAV.filter(item => isAllowed(item.to)).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

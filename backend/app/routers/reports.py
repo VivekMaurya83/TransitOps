@@ -14,7 +14,7 @@ from .. import models
 from ..core.rbac import require_roles
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
-allowed = require_roles(*list(models.UserRole))
+allowed = require_roles(models.UserRole.fleet_manager, models.UserRole.financial_analyst)
 
 @router.get("/summary")
 def get_summary(
