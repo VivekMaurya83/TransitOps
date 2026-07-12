@@ -4,16 +4,20 @@ Vehicle & Driver Documents router — /api/documents
 from typing import List
 from uuid import UUID
 from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from ..db.database import get_db
 from .. import models
 from ..core.rbac import require_roles
 
+
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 manager_or_safety = require_roles(models.UserRole.fleet_manager, models.UserRole.safety_officer)
+
 
 class VehicleDocumentCreate(BaseModel):
     vehicle_id: UUID
@@ -23,6 +27,7 @@ class VehicleDocumentCreate(BaseModel):
     expiry_date: date | None = None
     file_url: str
 
+
 class VehicleDocumentOut(BaseModel):
     id: UUID
     vehicle_id: UUID
@@ -30,6 +35,59 @@ class VehicleDocumentOut(BaseModel):
     expiry_date: date | None = None
     status: models.DocumentStatus
     model_config = {"from_attributes": True}
+
+
+@router.post("/vehicles", response_model=VehicleDocumentOut, status_code=status.HTTP_201_CREATED)
+def add_vehicle_document(
+    payload: VehicleDocumentCreate,
+    current_user: models.User = Depends(manager_or_safety),
+    db: Session = Depends(get_db),
+):
+    if payload.issue_date and payload.expiry_date and payload.expiry_date < payload.issue_date:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Expiry date cannot be earlier than issue date.",
+        )
+
+    vehicle = db.query(models.Vehicle).filter(
+        models.Vehicle.id == payload.vehicle_id,
+        models.Vehicle.company_id == current_user.company_id,
+    ).first()
+    if not vehicle:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found.")
+
+    doc = models.VehicleDocument(uploaded_by=current_user.id, **payload.model_dump())
+    db.add(doc)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Unable to create vehicle document due to invalid related data.",
+        )
+
+    db.refresh(doc)
+    return doc
+
+
+@router.get("/vehicles/{vehicle_id}", response_model=List[VehicleDocumentOut])
+def list_vehicle_documents(
+    vehicle_id: UUID,
+    current_user: models.User = Depends(require_roles(*list(models.UserRole))),
+    db: Session = Depends(get_db),
+):
+    vehicle = db.query(models.Vehicle).filter(
+        models.Vehicle.id == vehicle_id,
+        models.Vehicle.company_id == current_user.company_id,
+    ).first()
+    if not vehicle:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found.")
+
+    return db.query(models.VehicleDocument).filter(
+        models.VehicleDocument.vehicle_id == vehicle_id
+    ).all()
+
 
 class DriverDocumentCreate(BaseModel):
     driver_id: UUID
@@ -39,6 +97,7 @@ class DriverDocumentCreate(BaseModel):
     expiry_date: date | None = None
     file_url: str
 
+
 class DriverDocumentOut(BaseModel):
     id: UUID
     driver_id: UUID
@@ -46,6 +105,7 @@ class DriverDocumentOut(BaseModel):
     expiry_date: date | None = None
     status: models.DocumentStatus
     model_config = {"from_attributes": True}
+
 
 @router.post("/drivers", response_model=DriverDocumentOut, status_code=status.HTTP_201_CREATED)
 def add_driver_document(
@@ -79,6 +139,7 @@ def add_driver_document(
 
     db.refresh(doc)
     return doc
+
 
 @router.get("/drivers/{driver_id}", response_model=List[DriverDocumentOut])
 def list_driver_documents(
