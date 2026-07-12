@@ -1,111 +1,214 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+/* ═══════════════════════════════════════════════════════════════
+   TransitOps — Global Styles
+   Design System: Hanken Grotesk + JetBrains Mono
+   ═══════════════════════════════════════════════════════════════ */
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ─── Base Layer ──────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Hanken Grotesk', sans-serif;
+    background-color: #f7f9ff;
+    color: #181c20;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Material Symbols icon settings */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/* ─── Components Layer ────────────────────────────────────────── */
+@layer components {
+
+  /* JetBrains Mono for data cells */
+  .data-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
   }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  /* Custom thin scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* ─ Status Chips ──────────────────────────────────────────── */
+  .status-chip {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tight;
+  }
+  .status-on-trip {
+    @apply status-chip bg-primary/10 text-primary;
+  }
+  .status-completed {
+    @apply status-chip bg-odoo-teal/10 text-odoo-teal;
+  }
+  .status-dispatched {
+    @apply status-chip bg-secondary-container/30 text-odoo-teal;
+  }
+  .status-draft {
+    @apply status-chip bg-surface-container-highest text-secondary;
+  }
+  .status-delayed {
+    @apply status-chip bg-error-container text-error;
+  }
+  .status-available {
+    @apply status-chip bg-odoo-teal/10 text-odoo-teal;
+  }
+  .status-maintenance {
+    @apply status-chip bg-on-tertiary-container/20 text-tertiary;
+  }
+  .status-retired {
+    @apply status-chip bg-outline/10 text-outline;
+  }
+
+  /* ─ Sidebar Nav Item ─────────────────────────────────────── */
+  .nav-item {
+    @apply flex items-center gap-md text-secondary px-4 py-3
+           hover:bg-surface-container-low hover:text-primary
+           transition-all duration-150 rounded-none cursor-pointer;
+  }
+  .nav-item-active {
+    @apply flex items-center gap-md text-primary font-bold
+           bg-primary-fixed border-l-4 border-primary px-4 py-3;
+  }
+
+  /* ─ Card Base ────────────────────────────────────────────── */
+  .card {
+    @apply bg-surface-container-lowest border border-outline-variant rounded-xl;
+  }
+
+  /* ─ Stat Card ────────────────────────────────────────────── */
+  .stat-card {
+    @apply card p-md flex flex-col justify-between
+           hover:border-primary transition-colors cursor-default;
+  }
+
+  /* ─ Primary Button ──────────────────────────────────────── */
+  .btn-primary {
+    @apply bg-primary text-on-primary px-lg py-2 rounded
+           font-label-caps text-label-caps uppercase tracking-wider
+           flex items-center gap-xs hover:bg-primary/90
+           transition-colors duration-150;
+  }
+
+  /* ─ Secondary Button ─────────────────────────────────────── */
+  .btn-secondary {
+    @apply border border-outline-variant text-on-surface px-lg py-2 rounded
+           font-label-caps text-label-caps uppercase tracking-wider
+           hover:bg-surface-container-high transition-colors duration-150;
+  }
+
+  /* ─ Table Styles ─────────────────────────────────────────── */
+  .table-header-cell {
+    @apply px-md py-3 text-label-caps font-label-caps text-secondary text-left;
+  }
+  .table-row {
+    @apply hover:bg-surface-container-low transition-colors h-12;
+  }
+  .table-cell {
+    @apply px-md py-3;
+  }
+  .table-cell-mono {
+    @apply px-md py-3 font-mono text-[13px];
+  }
+
+  /* ─ Progress Bar ─────────────────────────────────────────── */
+  .progress-bar-track {
+    @apply w-full bg-surface-container-low h-2 rounded-full overflow-hidden;
+  }
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-700;
+  }
+
+  /* ─ Page Header ──────────────────────────────────────────── */
+  .page-header {
+    @apply flex justify-between items-center mb-lg;
+  }
+  .page-title {
+    @apply text-headline-md font-headline-md text-on-surface;
+  }
+  .page-subtitle {
+    @apply text-body-sm text-secondary mt-1;
+  }
+
+  /* ─ Search Input ─────────────────────────────────────────── */
+  .search-input {
+    @apply w-full pl-10 pr-md py-2 bg-surface-container-low
+           border-none focus:ring-2 focus:ring-primary/20
+           rounded-lg text-body-sm font-body-sm;
   }
 }
 
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+/* ─── Utilities Layer ─────────────────────────────────────────── */
+@layer utilities {
+  /* Icon fill variants */
+  .icon-filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+  /* Animate counter numbers */
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-}
-p {
-  margin: 0;
-}
+  .animate-count-up {
+    animation: countUp 0.4s ease-out both;
+  }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
+  /* Slide in from left (sidebar) */
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out both;
+  }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  /* Fade in up (cards, rows) */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.35s ease-out both;
+  }
+
+  /* Stagger helper classes */
+  .delay-75  { animation-delay: 75ms;  }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-150 { animation-delay: 150ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
 }
