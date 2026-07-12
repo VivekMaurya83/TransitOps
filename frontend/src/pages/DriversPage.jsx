@@ -117,11 +117,39 @@ export default function DriversPage() {
     } catch { showToast('Network error', 'error'); }
   };
 
+  const handleCheckExpirations = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/drivers/check-expirations`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message || 'Check triggered successfully');
+      } else {
+        showToast(data.detail || 'Failed to trigger check', 'error');
+      }
+    } catch {
+      showToast('Network error triggering check', 'error');
+    }
+  };
+
   const filtered = drivers.filter(d =>
     d.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     d.license_number?.toLowerCase().includes(search.toLowerCase()) ||
     d.license_category?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const expiringDrivers = drivers.filter(d => {
+    if (!d.license_expiry_date) return false;
+    const expiry = new Date(d.license_expiry_date);
+    const today = new Date();
+    // Compare dates ignoring times
+    today.setHours(0, 0, 0, 0);
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return d.is_active && diffDays <= 30;
+  });
 
   const initials = (name = '') => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -154,13 +182,45 @@ export default function DriversPage() {
               ))}
             </div>
             {canEdit && (
-              <button onClick={() => setShowModal(true)} className="btn-primary" id="add-driver-btn">
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person_add</span>
-                Add Driver
-              </button>
+              <div className="flex gap-sm">
+                <button onClick={handleCheckExpirations} className="btn-secondary" id="check-exp-btn">
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>notifications_active</span>
+                  Check Expirations
+                </button>
+                <button onClick={() => setShowModal(true)} className="btn-primary" id="add-driver-btn">
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person_add</span>
+                  Add Driver
+                </button>
+              </div>
             )}
           </div>
         </div>
+
+        {/* License Expiration Banner */}
+        {expiringDrivers.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
+            className="p-md rounded-xl bg-red-50 border border-red-200 text-red-800 flex items-start gap-sm shadow-sm">
+            <span className="material-symbols-outlined text-red-600 mt-0.5" style={{ fontSize: '20px' }}>warning</span>
+            <div className="flex-1 text-body-sm font-semibold">
+              <p className="font-bold text-red-900">Driver License Expiration Warning</p>
+              <p className="text-red-700 mt-0.5">
+                The following drivers have expired licenses or licenses expiring within the next 30 days:
+              </p>
+              <div className="flex flex-wrap gap-xs mt-sm">
+                {expiringDrivers.map(d => {
+                  const isExp = new Date(d.license_expiry_date) < new Date();
+                  return (
+                    <span key={d.id} className={`px-sm py-0.5 rounded text-[11px] font-bold ${
+                      isExp ? 'bg-red-200 text-red-900' : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {d.full_name} ({isExp ? 'Expired' : 'Expires: ' + d.license_expiry_date})
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Search */}
         <div className="relative max-w-sm">

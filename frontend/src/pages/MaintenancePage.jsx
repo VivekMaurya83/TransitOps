@@ -247,7 +247,6 @@ export default function MaintenancePage() {
                 )}
               </form>
             </div>
-
           </div>
 
           {/* Right Column: Service Log Table */}
@@ -264,7 +263,7 @@ export default function MaintenancePage() {
                       <tr className="bg-surface-container-high">
                         <th className="table-header-cell">Vehicle</th>
                         <th className="table-header-cell">Service</th>
-                        <th className="table-header-cell text-right">Cost</th>
+                        <th className="table-header-cell text-right">Cost (₹)</th>
                         <th className="table-header-cell">Status</th>
                         {canEdit && <th className="table-header-cell text-right">Actions</th>}
                       </tr>
@@ -291,7 +290,7 @@ export default function MaintenancePage() {
                             </td>
                             <td className="table-cell text-right">
                               <span className="data-mono text-[13px] font-black">
-                                {job.estimated_cost ? Number(job.estimated_cost).toLocaleString() : '—'}
+                                {job.estimated_cost ? `₹${Number(job.estimated_cost).toLocaleString()}` : '—'}
                               </span>
                             </td>
                             <td className="table-cell">

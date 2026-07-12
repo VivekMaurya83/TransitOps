@@ -72,3 +72,61 @@ def update_driver(
     db.commit()
     db.refresh(driver)
     return driver
+
+@router.post("/check-expirations")
+def check_license_expirations(
+    current_user: models.User = Depends(safety_or_manager),
+    db: Session = Depends(get_db),
+):
+    from datetime import date, timedelta
+    from ..services.email_service import send_license_expiry_alert
+    from ..utils.generators import send_email_async
+
+    limit_date = date.today() + timedelta(days=30)
+    drivers = (
+        db.query(models.Driver)
+        .filter(
+            models.Driver.company_id == current_user.company_id,
+            models.Driver.license_expiry_date <= limit_date,
+            models.Driver.is_active.is_(True)
+        )
+        .all()
+    )
+
+    if not drivers:
+        return {"message": "No drivers with expiring or expired licenses found."}
+
+    drivers_list = [
+        {
+            "name": d.full_name,
+            "license_number": d.license_number,
+            "expiry_date": str(d.license_expiry_date),
+            "status": d.status.value
+        }
+        for d in drivers
+    ]
+
+    # Query active safety officers and fleet managers in the company
+    managers = (
+        db.query(models.User)
+        .filter(
+            models.User.company_id == current_user.company_id,
+            models.User.is_active.is_(True),
+            models.User.role.in_([models.UserRole.safety_officer, models.UserRole.fleet_manager])
+        )
+        .all()
+    )
+
+    if not managers:
+        # Fallback to the current user if no specific roles found
+        send_email_async(send_license_expiry_alert, current_user.email, drivers_list)
+        return {"message": f"License expiry alert email queued for {current_user.email}", "expiring_drivers_count": len(drivers_list)}
+
+    for m in managers:
+        send_email_async(send_license_expiry_alert, m.email, drivers_list)
+
+    emails_queued = [m.email for m in managers]
+    return {
+        "message": f"License expiry alert email queued for managers: {', '.join(emails_queued)}",
+        "expiring_drivers_count": len(drivers_list)
+    }

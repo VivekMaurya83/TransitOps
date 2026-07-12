@@ -25,17 +25,30 @@ FONT_STACK = "'Segoe UI', 'Inter', Arial, sans-serif"
 BRAND_NAME = "TransitOps"
 
 def _send_email(to_email: str, subject: str, html_body: str) -> None:
-    """Core SMTP sender — raises on failure so callers can handle it."""
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = f"{BRAND_NAME} <{EMAIL_ID}>"
-    msg["To"] = to_email
-    msg.attach(MIMEText(html_body, "html"))
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(EMAIL_ID, EMAIL_PASS)
-        server.sendmail(EMAIL_ID, to_email, msg.as_string())
+    """Core SMTP sender — falls back to console printing if SMTP is not configured or fails."""
+    import sys
+    print(f"\n=======================================================", file=sys.stderr)
+    print(f"📧 SENDING EMAIL to: {to_email}", file=sys.stderr)
+    print(f"Subject: {subject}", file=sys.stderr)
+    print(f"=======================================================\n", file=sys.stderr)
+
+    if not EMAIL_ID or not EMAIL_PASS:
+        print("ℹ SMTP not configured. Printed email contents to console.", file=sys.stderr)
+        return
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{BRAND_NAME} <{EMAIL_ID}>"
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html"))
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(EMAIL_ID, EMAIL_PASS)
+            server.sendmail(EMAIL_ID, to_email, msg.as_string())
+    except Exception as e:
+        print(f"❌ Failed to send SMTP email: {e}", file=sys.stderr)
 
 def _base_layout(content_html: str) -> str:
     """Wraps any email content with the branded TransitOps header + footer."""
@@ -120,3 +133,41 @@ def send_password_reset_email(to_email: str, user_name: str, temp_password: str)
     """
     html = _base_layout(content)
     _send_email(to_email, f"Reset your {BRAND_NAME} password", html)
+
+def send_license_expiry_alert(to_email: str, drivers: list) -> None:
+    """Sent to managers/admins with a list of drivers whose licenses are expiring soon."""
+    import sys
+    print(f"\n[ALERT] License Expirations checking: Drivers with expiring licenses:", file=sys.stderr)
+    for d in drivers:
+        print(f"  - Driver: {d['name']} | License: {d['license_number']} | Expiry: {d['expiry_date']} | Status: {d['status']}", file=sys.stderr)
+    print(file=sys.stderr)
+
+    rows = ""
+    for d in drivers:
+        rows += f"""
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #ddd;">{d['name']}</td>
+          <td style="padding:8px;border-bottom:1px solid #ddd;">{d['license_number']}</td>
+          <td style="padding:8px;border-bottom:1px solid #ddd;color:#ba1a1a;font-weight:bold;">{d['expiry_date']}</td>
+          <td style="padding:8px;border-bottom:1px solid #ddd;">{d['status']}</td>
+        </tr>
+        """
+    content = f"""
+    <h2 style="color:{PRIMARY_DARK};">⚠️ Driver License Expiry Alert</h2>
+    <p>The following drivers have licenses that have expired or are expiring within the next 30 days. Please take action immediately to update their profiles and avoid scheduling blocks.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="text-align:left;border-collapse:collapse;margin-top:16px;">
+        <thead>
+            <tr style="background:#f2f2f2;">
+                <th style="padding:8px;border-bottom:2px solid #ddd;">Driver Name</th>
+                <th style="padding:8px;border-bottom:2px solid #ddd;">License No.</th>
+                <th style="padding:8px;border-bottom:2px solid #ddd;">Expiry Date</th>
+                <th style="padding:8px;border-bottom:2px solid #ddd;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows}
+        </tbody>
+    </table>
+    """
+    html = _base_layout(content)
+    _send_email(to_email, f"⚠️ Alert: Driver License Expirations - {BRAND_NAME}", html)
